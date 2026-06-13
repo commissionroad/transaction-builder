@@ -30,7 +30,7 @@ const stages: Array<{
 }> = [
   {
     id: "basics",
-    label: "Action",
+    label: "Basics",
     description: "Chain, name, and creator-facing description.",
   },
   {
@@ -171,10 +171,10 @@ function BasicsEditor({
       <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
         <label className="daisy-form-control">
           <span className="daisy-label pb-2">
-            <span className="daisy-label-text font-medium">Action Chain</span>
+            <span className="daisy-label-text font-medium">Chain</span>
           </span>
           <select
-            aria-label="Action Chain"
+            aria-label="Chain"
             className="daisy-select daisy-select-bordered w-full"
             value={draft.chainId}
             onChange={(event) =>

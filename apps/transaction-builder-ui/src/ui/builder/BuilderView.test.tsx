@@ -52,7 +52,8 @@ describe("BuilderView", () => {
     expect(view.getAllByRole("link", { name: "Build" }).length).toBeGreaterThan(
       0,
     );
-    expect(view.getByLabelText("Action Chain")).toBeTruthy();
+    expect(view.getByRole("button", { name: /Basics/i })).toBeTruthy();
+    expect(view.getByLabelText("Chain")).toBeTruthy();
     expect(view.getByLabelText("Action name")).toBeTruthy();
     expect(view.getByLabelText("Description")).toBeTruthy();
     expect(view.getByText("Action Preview")).toBeTruthy();

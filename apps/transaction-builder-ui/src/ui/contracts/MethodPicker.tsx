@@ -1,5 +1,5 @@
 import type { ContractSnapshot } from "@transaction-builder/domain";
-import { BookOpen, PencilLine, Search } from "lucide-react";
+import { BookOpen, ChevronDown, PencilLine, Search } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 import type { AbiFunctionFragment } from "../builder/builderState";
 import {
@@ -16,6 +16,7 @@ export function MethodPicker({
   onAddStep: (fragment: AbiFunctionFragment) => void;
 }) {
   const [filter, setFilter] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const functions = getAbiFunctions(contract.abi);
   const visibleFunctions = useMemo(
     () =>
@@ -40,53 +41,64 @@ export function MethodPicker({
   }
 
   return (
-    <div className="rounded-lg border border-base-300 bg-base-200 p-3">
-      <div className="mb-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-center">
-        <div>
-          <div className="font-medium">Choose method</div>
-          <div className="text-sm text-base-content/60">
-            Click a method to add it as this step.
-          </div>
-        </div>
-        <label className="daisy-input daisy-input-bordered flex items-center gap-2 bg-base-100">
-          <Search className="size-4 opacity-50" />
-          <input
-            aria-label="Filter methods"
-            className="w-full"
-            placeholder="Filter"
-            value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-          />
-        </label>
-      </div>
-
-      {visibleFunctions.length ? (
-        <ul className="daisy-menu max-h-96 overflow-y-auto rounded-lg border border-base-300 bg-base-100 p-2">
-          {writeFunctions.length ? (
-            <MethodGroup
-              fragments={writeFunctions}
-              icon={<PencilLine className="size-4" />}
-              label="Write"
-              open
-              onAddStep={onAddStep}
+    <div className="grid gap-2">
+      <button
+        aria-expanded={isOpen}
+        className="daisy-btn daisy-btn-outline w-full justify-between"
+        onClick={() => setIsOpen((current) => !current)}
+        type="button"
+      >
+        Choose method
+        <ChevronDown className="size-4" />
+      </button>
+      {isOpen ? (
+        <div className="rounded-lg border border-base-300 bg-base-200 p-2">
+          <label className="daisy-input daisy-input-bordered flex items-center gap-2 bg-base-100">
+            <Search className="size-4 opacity-50" />
+            <input
+              aria-label="Filter methods"
+              className="w-full"
+              placeholder="Filter"
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
             />
-          ) : null}
+          </label>
 
-          {readFunctions.length ? (
-            <MethodGroup
-              fragments={readFunctions}
-              icon={<BookOpen className="size-4" />}
-              label="Read"
-              open={!writeFunctions.length}
-              onAddStep={onAddStep}
-            />
-          ) : null}
-        </ul>
-      ) : (
-        <div className="rounded-lg border border-dashed border-base-300 bg-base-100 px-3 py-6 text-center text-sm text-base-content/60">
-          No methods match that filter.
+          {visibleFunctions.length ? (
+            <ul className="daisy-menu daisy-menu-sm mt-2 max-h-96 w-full overflow-y-auto rounded-lg bg-base-200 p-0">
+              {writeFunctions.length ? (
+                <MethodGroup
+                  fragments={writeFunctions}
+                  icon={<PencilLine className="size-4" />}
+                  label="Write"
+                  open
+                  onAddStep={(fragment) => {
+                    onAddStep(fragment);
+                    setIsOpen(false);
+                  }}
+                />
+              ) : null}
+
+              {readFunctions.length ? (
+                <MethodGroup
+                  fragments={readFunctions}
+                  icon={<BookOpen className="size-4" />}
+                  label="Read"
+                  open={!writeFunctions.length}
+                  onAddStep={(fragment) => {
+                    onAddStep(fragment);
+                    setIsOpen(false);
+                  }}
+                />
+              ) : null}
+            </ul>
+          ) : (
+            <div className="mt-2 rounded-lg border border-dashed border-base-300 bg-base-100 px-3 py-6 text-center text-sm text-base-content/60">
+              No methods match that filter.
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

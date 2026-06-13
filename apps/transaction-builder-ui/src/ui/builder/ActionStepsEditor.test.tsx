@@ -33,9 +33,9 @@ describe("ActionStepsEditor", () => {
       TOKEN_ADDRESS,
     );
 
-    expect(
-      await view.findByText(/Using the ABI already in this Action/i),
-    ).toBeTruthy();
+    await userEvent.click(
+      await view.findByRole("button", { name: /Choose method/i }),
+    );
 
     await userEvent.click(
       view.getByRole("button", { name: /balanceOf\(address\)/i }),
@@ -83,8 +83,9 @@ describe("ActionStepsEditor", () => {
       TOKEN_ADDRESS,
     );
 
-    expect(await view.findByText("MockToken")).toBeTruthy();
-    expect(await view.findByText(/ABI ready/i)).toBeTruthy();
+    await userEvent.click(
+      await view.findByRole("button", { name: /Choose method/i }),
+    );
     expect(fetchUrls).toHaveLength(1);
     expect(new URL(fetchUrls[0]).searchParams.get("action")).toBe(
       "getsourcecode",
@@ -135,6 +136,8 @@ describe("ActionStepsEditor", () => {
     );
 
     expect(await view.findByText(/Manual ABI loaded/i)).toBeTruthy();
+
+    await userEvent.click(view.getByRole("button", { name: /Choose method/i }));
 
     await userEvent.click(
       view.getByRole("button", { name: /transfer\(address,uint256\)/i }),

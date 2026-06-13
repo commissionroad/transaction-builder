@@ -61,6 +61,9 @@ export function ContractAddressInput({
     chainId,
     enabled: !!address && !existingContract && !manualContract,
   });
+  const shouldShowInlineSuccess = Boolean(
+    address && (existingContract || query.data),
+  );
 
   const resolvedContract = useMemo(() => {
     if (!address) return undefined;
@@ -158,19 +161,24 @@ export function ContractAddressInput({
               Contract address
             </span>
           </span>
-          <input
-            ref={addressInputRef}
-            className="daisy-input daisy-input-bordered w-full font-mono text-sm"
-            placeholder="0x..."
-            value={addressText}
-            onChange={(event) => {
-              setAddressText(event.target.value.trim());
-              setManualContract(null);
-              setManualAbiError(null);
-              setManualAbiText("");
-              setIsManualOpen(false);
-            }}
-          />
+          <span className="relative block">
+            <input
+              ref={addressInputRef}
+              className="daisy-input daisy-input-bordered w-full pr-10 font-mono text-sm"
+              placeholder="0x..."
+              value={addressText}
+              onChange={(event) => {
+                setAddressText(event.target.value.trim());
+                setManualContract(null);
+                setManualAbiError(null);
+                setManualAbiText("");
+                setIsManualOpen(false);
+              }}
+            />
+            {shouldShowInlineSuccess ? (
+              <CheckCircle2 className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-success" />
+            ) : null}
+          </span>
         </label>
       </div>
 
@@ -194,18 +202,13 @@ export function ContractAddressInput({
         </div>
       ) : null}
 
-      {resolvedContract ? (
-        <div className="mt-3 flex items-start gap-2 rounded-lg bg-success p-3 text-sm text-neutral">
+      {manualContract ? (
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-success/30 bg-success/10 p-3 text-sm">
           <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
           <div>
-            <div className="font-medium">
-              {getResolvedContractLabel(resolvedContract)}
-            </div>
-            <div className="opacity-70">
-              {getResolvedContractMessage({
-                existingContract: !!existingContract,
-                manualContract: !!manualContract,
-              })}
+            <div className="font-medium">Manual ABI loaded</div>
+            <div className="text-base-content/70">
+              Choose a method below to add this step.
             </div>
           </div>
         </div>
@@ -271,28 +274,4 @@ function getLookupErrorMessage(error: Error | null): string {
   }
 
   return `${message}. Paste a verified ABI below if the explorer cannot resolve this contract.`;
-}
-
-function getResolvedContractLabel(contract: ContractSnapshot): string {
-  return (
-    contract.labels.verified ?? contract.labels.creator ?? contract.address
-  );
-}
-
-function getResolvedContractMessage({
-  existingContract,
-  manualContract,
-}: {
-  existingContract: boolean;
-  manualContract: boolean;
-}): string {
-  if (manualContract) {
-    return "Manual ABI loaded. Choose a method below to add this step.";
-  }
-
-  if (existingContract) {
-    return "Using the ABI already in this Action. Choose a method below to add this step.";
-  }
-
-  return "ABI ready. Choose a method below to add this step.";
 }
