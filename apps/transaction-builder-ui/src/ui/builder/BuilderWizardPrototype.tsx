@@ -2,17 +2,24 @@ import {
   SUPPORTED_CHAIN_IDS,
   getChainConfig,
 } from "@transaction-builder/commissionroad-protocol";
-import { validateDraft } from "@transaction-builder/domain";
+import {
+  validateDraft,
+  type ContractParameterBinding,
+} from "@transaction-builder/domain";
 import {
   ArrowRight,
   Check,
   Circle,
+  Coins,
+  CornerDownRight,
   FileCode2,
+  GitBranch,
   ListChecks,
   PanelRight,
   Route,
   Settings2,
   Sparkles,
+  Variable,
 } from "lucide-react";
 import {
   useMemo,
@@ -148,7 +155,7 @@ function VariantA({ draft, onChange, setStage, stage }: VariantProps) {
             onEdit={() => setStage("basics")}
           />
         ) : null}
-        <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_310px]">
+        <div className="p-5">
           <div className="min-w-0">
             <StageWorkSurface
               draft={draft}
@@ -176,10 +183,6 @@ function VariantA({ draft, onChange, setStage, stage }: VariantProps) {
               </button>
             </div>
           </div>
-          <aside className="grid content-start gap-4">
-            <ReadinessCard draft={draft} />
-            <DraftStatePanel draft={draft} compact />
-          </aside>
         </div>
       </section>
     </main>
@@ -367,6 +370,7 @@ function StageWorkSurface({
   if (stage === "steps") {
     return (
       <div className="grid gap-5">
+        {variant === "A" ? <ActionFlowTree draft={draft} /> : null}
         <ActionStepsEditor draft={draft} onChange={onChange} />
         {draft.variables.length ? (
           <ActionVariableEditor draft={draft} onChange={onChange} />
@@ -384,6 +388,196 @@ function StageWorkSurface({
       <ReviewSummary draft={draft} />
       <SnippetPanel draft={draft} />
       {variant !== "A" ? <DraftStatePanel draft={draft} /> : null}
+    </div>
+  );
+}
+
+function ActionFlowTree({ draft }: { draft: BuilderDraft }) {
+  const summary = getDraftSummary(draft);
+
+  return (
+    <section className="rounded-lg border border-base-300 bg-base-200 p-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-semibold text-secondary">
+            <GitBranch className="size-4" />
+            Action Tree
+          </div>
+          <p className="mt-1 text-sm text-base-content/70">
+            A structural view of what the shared transaction page will ask for
+            and execute.
+          </p>
+        </div>
+        <div className="daisy-badge daisy-badge-outline">{summary.steps}</div>
+      </div>
+
+      {!draft.steps.length ? (
+        <div className="rounded-lg border border-dashed border-base-300 bg-base-100 px-4 py-8 text-center">
+          <div className="font-medium">No tree yet</div>
+          <p className="mt-1 text-sm text-base-content/70">
+            Add an Action Step and this will turn into the execution tree.
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          <TreeRoot draft={draft} />
+          <ol className="relative ml-3 border-l border-base-300">
+            {draft.steps.map((step, index) => (
+              <li className="ml-5 pb-5 last:pb-0" key={step.id}>
+                <span className="absolute -left-[9px] flex size-4 items-center justify-center rounded-full border border-secondary bg-base-100">
+                  <span className="size-1.5 rounded-full bg-secondary" />
+                </span>
+                <div className="rounded-lg border border-base-300 bg-base-100 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                        Step {index + 1} · {step.kind}
+                      </div>
+                      <div className="mt-1 break-all font-mono text-sm font-semibold">
+                        {step.functionSignature ?? step.functionName}
+                      </div>
+                      <div className="mt-1 break-all text-xs text-base-content/60">
+                        {getContractDisplayName(draft, step.contractId)} ·{" "}
+                        {step.target}
+                      </div>
+                    </div>
+                    <div className="daisy-badge daisy-badge-outline">
+                      {step.stateMutability}
+                    </div>
+                  </div>
+
+                  {step.inputs.length || step.callValue ? (
+                    <div className="mt-4 grid gap-2">
+                      {step.inputs.map((input, parameterIndex) => (
+                        <TreeBindingRow
+                          key={`${step.id}-${parameterIndex}`}
+                          label={
+                            input.name || `parameter ${parameterIndex + 1}`
+                          }
+                          source={formatBindingSource(
+                            draft,
+                            step.parameters[parameterIndex],
+                          )}
+                          type={input.type}
+                        />
+                      ))}
+                      {step.callValue ? (
+                        <TreeBindingRow
+                          label="Call Value"
+                          source={formatBindingSource(draft, step.callValue)}
+                          type="uint256"
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  {step.outputs.length ? (
+                    <div className="mt-4 rounded-lg bg-base-200 p-3">
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-base-content/50">
+                        <CornerDownRight className="size-3.5" />
+                        Step Outputs
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {step.outputs.map((output, outputIndex) => (
+                          <span
+                            className="rounded-md border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs"
+                            key={`${step.id}-output-${outputIndex}`}
+                          >
+                            {output.name || `output ${outputIndex + 1}`}{" "}
+                            <span className="text-base-content/50">
+                              {output.type}
+                            </span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+            <li className="ml-5">
+              <span className="absolute -left-[9px] flex size-4 items-center justify-center rounded-full border border-secondary bg-base-100">
+                <Coins className="size-3 text-secondary" />
+              </span>
+              <div className="rounded-lg border border-secondary/30 bg-success p-4 text-neutral">
+                <div className="text-xs font-semibold uppercase tracking-wide opacity-60">
+                  Commission
+                </div>
+                <div className="mt-1 text-sm font-semibold">
+                  {summary.commission}
+                </div>
+                <p className="mt-1 text-xs opacity-70">
+                  {draft.commissionRoadNftId
+                    ? `Paid to CommissionRoad NFT #${draft.commissionRoadNftId}.`
+                    : "Pick a CommissionRoad NFT in the Commission step."}
+                </p>
+              </div>
+            </li>
+          </ol>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TreeRoot({ draft }: { draft: BuilderDraft }) {
+  return (
+    <div className="rounded-lg border border-base-300 bg-base-100 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
+            Share-link user
+          </div>
+          <div className="mt-1 text-sm font-semibold">
+            Supplies dynamic Action Variables
+          </div>
+        </div>
+        <div className="daisy-badge daisy-badge-outline">
+          {draft.variables.length || 0} inputs
+        </div>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {draft.variables.length ? (
+          draft.variables.map((variable) => (
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-base-300 bg-base-200 px-2 py-1 text-xs"
+              key={variable.name}
+            >
+              <Variable className="size-3 text-secondary" />
+              {variable.label}{" "}
+              <span className="font-mono text-base-content/50">
+                {variable.name}
+              </span>
+            </span>
+          ))
+        ) : (
+          <span className="text-sm text-base-content/60">
+            No dynamic inputs yet.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TreeBindingRow({
+  label,
+  source,
+  type,
+}: {
+  label: string;
+  source: string;
+  type: string;
+}) {
+  return (
+    <div className="grid gap-2 rounded-md border border-base-300 bg-base-200 px-3 py-2 text-sm sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
+      <div>
+        <span className="font-medium">{label}</span>{" "}
+        <span className="font-mono text-xs text-base-content/50">{type}</span>
+      </div>
+      <div className="break-all font-mono text-xs text-base-content/70">
+        {source}
+      </div>
     </div>
   );
 }
@@ -742,6 +936,66 @@ function getDraftSummary(draft: BuilderDraft): DraftSummary {
         ? "1 Action Variable"
         : `${draft.variables.length} Action Variables`,
   };
+}
+
+function getContractDisplayName(
+  draft: BuilderDraft,
+  contractId: string,
+): string {
+  const contract = draft.contracts.find(
+    (candidate) => candidate.id === contractId,
+  );
+
+  return (
+    contract?.labels.verified ??
+    contract?.labels.creator ??
+    contract?.address ??
+    contractId
+  );
+}
+
+function formatBindingSource(
+  draft: BuilderDraft,
+  binding: ContractParameterBinding | undefined,
+): string {
+  if (!binding) {
+    return "Unset";
+  }
+
+  if (binding.kind === "fixed") {
+    return `Fixed · ${formatFixedValue(binding.value)}`;
+  }
+
+  if (binding.kind === "actionVariable") {
+    const variable = draft.variables.find(
+      (candidate) => candidate.name === binding.name,
+    );
+
+    return `Action Variable · ${variable?.label ?? binding.name} (${binding.name})`;
+  }
+
+  const sourceStepIndex = draft.steps.findIndex(
+    (candidate) => candidate.id === binding.stepId,
+  );
+  const sourceStep = draft.steps[sourceStepIndex];
+  const output = sourceStep?.outputs[binding.outputIndex];
+  const outputName = output?.name || `output ${binding.outputIndex + 1}`;
+
+  return `Step ${sourceStepIndex + 1} Output · ${
+    sourceStep?.functionSignature ?? binding.stepId
+  } · ${outputName}`;
+}
+
+function formatFixedValue(value: unknown): string {
+  if (typeof value === "string") {
+    return value || "empty";
+  }
+
+  if (typeof value === "boolean" || typeof value === "number") {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
 }
 
 function isStageComplete(stage: StageId, draft: BuilderDraft): boolean {
