@@ -7,8 +7,11 @@ import { AlertTriangle } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   prepareCommissionCall,
+  previewCommissionCall,
   type RawActionVariableValues,
 } from "src/transactions/commissionCall";
+import { ExecutionChecklist } from "./ExecutionChecklist";
+import { usePermit2Preflight } from "./usePermit2Preflight";
 import {
   isAllowlistBlocking,
   isAllowlistPending,
@@ -38,9 +41,22 @@ export function ActionVariableForm({
       ]),
     ),
   );
-  const prepared = useMemo(
-    () => prepareCommissionCall({ definition, rawValues }),
+  const preview = useMemo(
+    () => previewCommissionCall({ definition, rawValues }),
     [definition, rawValues],
+  );
+  const permit2Preflight = usePermit2Preflight({ definition, preview });
+  const prepared = useMemo(
+    () =>
+      prepareCommissionCall({
+        definition,
+        permit2Authorization:
+          permit2Preflight.kind === "erc20"
+            ? permit2Preflight.authorization
+            : undefined,
+        rawValues,
+      }),
+    [definition, permit2Preflight, rawValues],
   );
   const {
     data: hash,
@@ -59,6 +75,10 @@ export function ActionVariableForm({
 
     if (!isConnected) {
       openConnectModal?.();
+      return;
+    }
+
+    if (permit2Preflight.kind === "erc20" && !permit2Preflight.canExecute) {
       return;
     }
 
@@ -111,9 +131,11 @@ export function ActionVariableForm({
         <ExecutionPreview
           definition={definition}
           preparation={prepared}
+          preview={preview}
           transactionHash={hash}
           writeError={writeError}
         />
+        <ExecutionChecklist preflight={permit2Preflight} />
 
         <button
           className="daisy-btn daisy-btn-primary w-full"
@@ -121,7 +143,8 @@ export function ActionVariableForm({
             isPending ||
             receipt.isLoading ||
             isAllowlistBlocked ||
-            isAllowlistLoading
+            isAllowlistLoading ||
+            (permit2Preflight.kind === "erc20" && !permit2Preflight.canExecute)
           }
           onClick={handleExecute}
           type="button"
@@ -212,19 +235,21 @@ function ActionVariableInput({
 function ExecutionPreview({
   definition,
   preparation,
+  preview,
   transactionHash,
   writeError,
 }: {
   definition: ActionDefinitionV1;
   preparation: ReturnType<typeof prepareCommissionCall>;
+  preview: ReturnType<typeof previewCommissionCall>;
   transactionHash: `0x${string}` | undefined;
   writeError: Error | null;
 }) {
-  if (!preparation.success) {
+  if (!preview.success) {
     return (
       <div className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-        <span>{preparation.issues[0]?.message}</span>
+        <span>{preview.issues[0]?.message}</span>
       </div>
     );
   }
@@ -233,21 +258,32 @@ function ExecutionPreview({
     definition.commissionToken.kind === "eth"
       ? "ETH"
       : (definition.commissionToken.symbol ?? "tokens");
+  const commissionDecimals =
+    definition.commissionToken.kind === "eth"
+      ? 18
+      : (definition.commissionToken.decimals ?? 18);
 
   return (
     <div className="grid gap-3 rounded-lg bg-base-200 p-3 text-sm">
       <div className="flex items-center justify-between gap-3">
         <span className="text-base-content/70">App fee</span>
         <span className="font-mono">
-          {formatUnits(preparation.prepared.commission, 18)} {commissionSymbol}
+          {formatUnits(preview.preview.commission, commissionDecimals)}{" "}
+          {commissionSymbol}
         </span>
       </div>
       <div className="flex items-center justify-between gap-3">
         <span className="text-base-content/70">Total ETH sent</span>
         <span className="font-mono">
-          {formatUnits(preparation.prepared.value, 18)} ETH
+          {formatUnits(preview.preview.totalEthValue, 18)} ETH
         </span>
       </div>
+      {!preparation.success && preparation.issues[0]?.path !== "permit2" ? (
+        <div className="flex gap-2 text-xs text-warning">
+          <AlertTriangle className="mt-0.5 size-3 shrink-0" />
+          <span>{preparation.issues[0]?.message}</span>
+        </div>
+      ) : null}
       {transactionHash ? (
         <div className="break-all text-xs text-base-content/70">
           Transaction: <span className="font-mono">{transactionHash}</span>

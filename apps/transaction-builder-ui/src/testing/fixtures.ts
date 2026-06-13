@@ -2,6 +2,7 @@ import type { ActionDefinitionV1 } from "@transaction-builder/domain";
 
 const LIDO_ADDRESS = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84";
 const COMMISSION_ROAD_ADDRESS = "0xc12dC152f12CaABF68F101Dbe496c4173828935E";
+const USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48";
 
 export function createLidoSweepAction(): ActionDefinitionV1 {
   return {
@@ -121,5 +122,21 @@ export function createPublishedActionResponse(
     schemaVersion: definition.schemaVersion,
     definition,
     createdAt: "2026-06-13T00:00:00.000Z",
+  };
+}
+
+export function createUsdcCommissionAction(): ActionDefinitionV1 {
+  return {
+    ...createLidoSweepAction(),
+    commissionToken: {
+      kind: "erc20",
+      address: USDC_ADDRESS,
+      symbol: "USDC",
+      decimals: 6,
+    },
+    commissionFormula: {
+      kind: "flat",
+      amount: "0.25",
+    },
   };
 }

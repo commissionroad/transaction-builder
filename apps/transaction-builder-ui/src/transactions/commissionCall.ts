@@ -1,9 +1,12 @@
 import {
   ETH_SENTINEL,
   commissionRoadAbi,
+  permit2Abi,
   getCommissionRoadAddresses,
 } from "@transaction-builder/commissionroad-protocol";
 import {
+  createPermit2FundingCallArgs,
+  createPermit2FundingRequest,
   getActionShape,
   validateDraft,
   type ActionDefinitionV1,
@@ -23,6 +26,13 @@ import {
 
 export type RawActionVariableValues = Record<string, string | boolean>;
 
+export interface Permit2Authorization {
+  owner: Address;
+  signature: Hex;
+  nonce: bigint;
+  deadline: bigint;
+}
+
 export interface CommissionCallBatchItem {
   target: Address;
   callData: Hex;
@@ -39,6 +49,10 @@ export interface PreparedCommissionCall {
   commission: bigint;
   commissionToken: Address;
   batchCallData: CommissionCallBatchItem[];
+  permit2Funding?: {
+    amount: bigint;
+    target: Address;
+  };
 }
 
 export type PrepareCommissionCallResult =
@@ -51,13 +65,31 @@ export type PrepareCommissionCallResult =
       issues: ValidationIssue[];
     };
 
-export function prepareCommissionCall({
+export type PreviewCommissionCallResult =
+  | {
+      success: true;
+      preview: {
+        batchCallData: CommissionCallBatchItem[];
+        chainId: ActionDefinitionV1["chainId"];
+        commission: bigint;
+        commissionToken: Address;
+        commissionTokenDecimals: number;
+        requiresPermit2Funding: boolean;
+        totalEthValue: bigint;
+      };
+    }
+  | {
+      success: false;
+      issues: ValidationIssue[];
+    };
+
+export function previewCommissionCall({
   definition,
   rawValues,
 }: {
   definition: ActionDefinitionV1;
   rawValues: RawActionVariableValues;
-}): PrepareCommissionCallResult {
+}): PreviewCommissionCallResult {
   const validation = validateDraft(definition);
   if (!validation.success) {
     return validation;
@@ -65,13 +97,6 @@ export function prepareCommissionCall({
 
   if (getActionShape(definition) !== "commissionCall") {
     return fail("steps", "Commission Plans are not executable in this MVP.");
-  }
-
-  if (definition.commissionToken.kind !== "eth") {
-    return fail(
-      "commissionToken",
-      "ERC20 commissions need Permit2 Funding before execution.",
-    );
   }
 
   if (!definition.commissionRoadNftId) {
@@ -105,16 +130,99 @@ export function prepareCommissionCall({
     return commissionResult;
   }
 
-  const commissionToken = ETH_SENTINEL;
+  const commissionToken =
+    definition.commissionToken.kind === "eth"
+      ? ETH_SENTINEL
+      : definition.commissionToken.address;
   const totalValue =
     batchResult.batchCallData.reduce((sum, item) => sum + item.value, 0n) +
-    commissionResult.commission;
+    (definition.commissionToken.kind === "eth"
+      ? commissionResult.commission
+      : 0n);
+
+  return {
+    success: true,
+    preview: {
+      batchCallData: batchResult.batchCallData,
+      chainId: definition.chainId,
+      commission: commissionResult.commission,
+      commissionToken,
+      commissionTokenDecimals: getCommissionTokenDecimals(definition),
+      requiresPermit2Funding: definition.commissionToken.kind === "erc20",
+      totalEthValue: totalValue,
+    },
+  };
+}
+
+export function prepareCommissionCall({
+  definition,
+  permit2Authorization,
+  rawValues,
+}: {
+  definition: ActionDefinitionV1;
+  permit2Authorization?: Permit2Authorization;
+  rawValues: RawActionVariableValues;
+}): PrepareCommissionCallResult {
+  const preview = previewCommissionCall({ definition, rawValues });
+  if (!preview.success) {
+    return preview;
+  }
+
+  const nftId = definition.commissionRoadNftId;
+  if (!nftId) {
+    return fail(
+      "commissionRoadNftId",
+      "This Action does not include a CommissionRoad NFT ID.",
+    );
+  }
+
+  const addresses = getCommissionRoadAddresses(definition.chainId);
+  const batchCallData = [...preview.preview.batchCallData];
+  let permit2Funding: PreparedCommissionCall["permit2Funding"];
+
+  if (definition.commissionToken.kind === "erc20") {
+    if (!permit2Authorization) {
+      return fail(
+        "permit2",
+        "Sign a Permit2 authorization for the exact commission amount before executing.",
+      );
+    }
+
+    const request = createPermit2FundingRequest({
+      commission: preview.preview.commission,
+      commissionRoadAddress: addresses.commissionRoad,
+      definition,
+      deadline: permit2Authorization.deadline,
+      nonce: permit2Authorization.nonce,
+      owner: permit2Authorization.owner,
+      permit2Address: addresses.permit2,
+    });
+
+    batchCallData.unshift({
+      target: addresses.permit2,
+      callData: encodeFunctionData({
+        abi: permit2Abi,
+        functionName: "permitTransferFrom",
+        args: createPermit2FundingCallArgs({
+          request,
+          signature: permit2Authorization.signature,
+        }),
+      }),
+      value: 0n,
+    });
+
+    permit2Funding = {
+      amount: preview.preview.commission,
+      target: addresses.permit2,
+    };
+  }
+
   const address = getCommissionRoadAddresses(definition.chainId).commissionRoad;
   const args = [
-    batchResult.batchCallData,
-    BigInt(definition.commissionRoadNftId),
-    commissionToken,
-    commissionResult.commission,
+    batchCallData,
+    BigInt(nftId),
+    preview.preview.commissionToken,
+    preview.preview.commission,
   ] as const;
 
   return {
@@ -124,11 +232,12 @@ export function prepareCommissionCall({
       abi: commissionRoadAbi,
       functionName: "commissionCall",
       args,
-      value: totalValue,
-      chainId: definition.chainId,
-      commission: commissionResult.commission,
-      commissionToken,
-      batchCallData: batchResult.batchCallData,
+      value: preview.preview.totalEthValue,
+      chainId: preview.preview.chainId,
+      commission: preview.preview.commission,
+      commissionToken: preview.preview.commissionToken,
+      batchCallData,
+      permit2Funding,
     },
   };
 }
@@ -342,10 +451,20 @@ function getCommissionAmount({
   | { success: true; commission: bigint }
   | { success: false; issues: ValidationIssue[] } {
   if (definition.commissionFormula.kind === "flat") {
-    return {
-      success: true,
-      commission: BigInt(definition.commissionFormula.amount),
-    };
+    try {
+      return {
+        success: true,
+        commission: parseUnits(
+          definition.commissionFormula.amount,
+          getCommissionTokenDecimals(definition),
+        ),
+      };
+    } catch {
+      return fail(
+        "commissionFormula.amount",
+        `Flat commission amount could not be parsed.`,
+      );
+    }
   }
 
   const source = parsedVariables[definition.commissionFormula.variable];
@@ -360,6 +479,14 @@ function getCommissionAmount({
     success: true,
     commission: (source * BigInt(definition.commissionFormula.bps)) / 10_000n,
   };
+}
+
+function getCommissionTokenDecimals(definition: ActionDefinitionV1): number {
+  if (definition.commissionToken.kind === "eth") {
+    return 18;
+  }
+
+  return definition.commissionToken.decimals ?? 18;
 }
 
 function fail(
