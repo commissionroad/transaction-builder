@@ -51,6 +51,7 @@ Dependent tasks should be reviewed and merged before their downstream task start
 ### Task 1: Scaffold The Turborepo
 
 **Files:**
+
 - Create: `package.json`
 - Create: `turbo.json`
 - Create: `.gitignore`
@@ -134,6 +135,7 @@ gh pr create --title "Task 1: Scaffold transaction builder turborepo" \
 ### Task 2: Define The Action Domain Schema And Compiler
 
 **Files:**
+
 - Create: `packages/transaction-builder-domain/package.json`
 - Create: `packages/transaction-builder-domain/src/index.ts`
 - Create: `packages/transaction-builder-domain/src/schema.ts`
@@ -279,6 +281,7 @@ gh pr create --title "Task 2: Add action domain schema and compiler" \
 ### Task 3: Copy CommissionRoad Protocol ABIs And Chain Config
 
 **Files:**
+
 - Create: `packages/commissionroad-protocol/package.json`
 - Create: `packages/commissionroad-protocol/src/index.ts`
 - Create: `packages/commissionroad-protocol/src/abis.ts`
@@ -364,6 +367,7 @@ gh pr create --title "Task 3: Copy CommissionRoad protocol config" \
 ### Task 4: Add Published Action Persistence API
 
 **Files:**
+
 - Create: `packages/transaction-builder-database/package.json`
 - Create: `packages/transaction-builder-database/src/index.ts`
 - Create: `packages/transaction-builder-database/src/client.ts`
@@ -418,7 +422,9 @@ export const publishedActions = pgTable("published_actions", {
   title: text("title").notNull(),
   schemaVersion: integer("schema_version").notNull(),
   definition: jsonb("definition").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 ```
 
@@ -457,6 +463,7 @@ gh pr create --title "Task 4: Add published action persistence API" \
 ### Task 5: Build The UI Shell And Builder Draft Page
 
 **Files:**
+
 - Create: `apps/transaction-builder-ui/index.html`
 - Create: `apps/transaction-builder-ui/vite.config.ts`
 - Create: `apps/transaction-builder-ui/tsconfig.json`
@@ -545,6 +552,7 @@ gh pr create --title "Task 5: Add builder UI shell" \
 ### Task 6: Add ABI Lookup, Action Steps, And Live Snippets For Independent ETH Actions
 
 **Files:**
+
 - Create: `apps/transaction-builder-ui/src/ui/contracts/useExplorerAbi.ts`
 - Create: `apps/transaction-builder-ui/src/ui/contracts/ContractAddressInput.tsx`
 - Create: `apps/transaction-builder-ui/src/ui/contracts/MethodPicker.tsx`
@@ -607,7 +615,7 @@ For this task, only allow write methods in generated snippets. Read Steps can be
 Creators can bind:
 
 - method args to fixed values or Action Variables
-- payable Call Value to fixed ETH amount or Action Variable
+- payable Eth Value to fixed ETH amount or Action Variable
 
 **Step 6: Add Commission Formula editor**
 
@@ -649,6 +657,7 @@ gh pr create --title "Task 6: Add ETH action snippets" \
 ### Task 7: Implement Share Action And `/t/$slug` Action Page
 
 **Files:**
+
 - Create: `apps/transaction-builder-ui/src/network/apiClient.ts`
 - Create: `apps/transaction-builder-ui/src/ui/action/ActionRoute.tsx`
 - Create: `apps/transaction-builder-ui/src/ui/action/ActionPage.tsx`
@@ -710,7 +719,7 @@ MVP supports:
 
 - raw address input
 - bigint text input
-- ETH amount input for Call Value variables when known
+- ETH amount input for Eth Value variables when known
 
 No ENS. No fiat.
 
@@ -740,6 +749,7 @@ gh pr create --title "Task 7: Add Share Action and Action Page" \
 ### Task 8: Execute Classic ETH Commission Calls
 
 **Files:**
+
 - Create: `packages/transaction-builder-domain/src/encode/commissionCall.ts`
 - Create: `packages/transaction-builder-domain/src/encode/commissionCall.test.ts`
 - Create: `apps/transaction-builder-ui/src/ui/action/useActionExecution.ts`
@@ -752,7 +762,7 @@ Test:
 
 - fixed method arguments encode correctly
 - Action Variable arguments encode correctly
-- Call Value variable contributes to total `msg.value`
+- Eth Value variable contributes to total `msg.value`
 - ETH Commission Formula contributes to total `msg.value`
 - encoded result targets `commissionCall`
 
@@ -824,6 +834,7 @@ gh pr create --title "Task 8: Execute ETH Commission Calls" \
 ### Task 9: Add NFT Selection And Current Allowlist Checks
 
 **Files:**
+
 - Create: `apps/transaction-builder-ui/src/ui/nfts/useCommissionRoadNfts.ts`
 - Create: `apps/transaction-builder-ui/src/ui/nfts/NftPicker.tsx`
 - Create: `apps/transaction-builder-ui/src/ui/allowlist/useAllowlistValidation.ts`
@@ -914,6 +925,7 @@ gh pr create --title "Task 9: Add NFT and allowlist validation" \
 ### Task 10: Add Commission Plan Support With Read Steps And Step Outputs
 
 **Files:**
+
 - Create: `packages/transaction-builder-domain/src/encode/commissionPlan.ts`
 - Create: `packages/transaction-builder-domain/src/encode/commissionPlan.test.ts`
 - Modify: `apps/transaction-builder-ui/src/ui/contracts/MethodPicker.tsx`
@@ -987,6 +999,7 @@ gh pr create --title "Task 10: Add Commission Plan Step Outputs" \
 ### Task 11: Add ERC20 Commission Token And Permit2 Funding
 
 **Files:**
+
 - Create: `packages/transaction-builder-domain/src/permit2/permit2Funding.ts`
 - Create: `packages/transaction-builder-domain/src/permit2/permit2Funding.test.ts`
 - Create: `apps/transaction-builder-ui/src/ui/token/useTokenMetadata.ts`
@@ -1106,7 +1119,7 @@ Manual QA:
 
 - Open builder at `/`.
 - Create an Ethereum mainnet Action with Lido `submit(address)`.
-- Bind Call Value to `stakeAmount`.
+- Bind Eth Value to `stakeAmount`.
 - Add CommissionRoad ERC20 sweep helper for stETH to `recipient`.
 - Set CommissionRoad NFT ID.
 - Set ETH Commission Formula to `0.01% of stakeAmount`.

@@ -37,10 +37,10 @@ The MVP focuses on classic CommissionRoad execution: Commission Call for indepen
 19. As an Action creator, I want editable creator Contract Labels, so that I can make complex flows easier to understand.
 20. As an end user, I want creator Contract Labels to remain inspectable with raw contract addresses, so that a misleading label cannot hide the actual target.
 21. As an Action creator, I want method pickers grouped into write methods and Read Steps, so that I can find the operation I need.
-22. As an Action creator, I want payable Call Value shown separately from method arguments, so that ETH sent with a call is explicit.
-23. As an Action creator, I want Call Value to be fixed or bound to an Action Variable, so that users can provide ETH amounts later.
+22. As an Action creator, I want payable Eth Value shown separately from method arguments, so that ETH sent with a call is explicit.
+23. As an Action creator, I want Eth Value to be fixed or bound to an Action Variable, so that users can provide ETH amounts later.
 24. As an Action creator, I want to create Action Variables with internal names, labels, helper text, and types, so that end users get a friendly form without losing precision.
-25. As an Action creator, I want Action Variables reusable across parameters, Call Value, and Commission Formulas, so that repeated user-provided values stay consistent.
+25. As an Action creator, I want Action Variables reusable across parameters, Eth Value, and Commission Formulas, so that repeated user-provided values stay consistent.
 26. As an end user, I want to inspect each Action Variable’s internal name and usage, so that a friendly label cannot misrepresent what my input controls.
 27. As an Action creator, I want Contract Parameters to support fixed values, Action Variables, and Step Outputs, so that I can model static and dynamic flows.
 28. As an Action creator, I want Step Outputs from earlier Action Steps available to later Action Steps, so that dependent Actions can be built without custom contracts.
@@ -134,8 +134,8 @@ The MVP focuses on classic CommissionRoad execution: Commission Call for indepen
 - System-managed Permit2 Funding is prepended when needed.
 - Commission collection is handled by CommissionRoad in classic execution.
 - EIP-7702 is excluded from MVP.
-- Call Value is modeled separately from method arguments.
-- Call Value may be fixed or filled from an Action Variable.
+- Eth Value is modeled separately from method arguments.
+- Eth Value may be fixed or filled from an Action Variable.
 - Commission Formulas support flat fee or percentage of one Action Variable.
 - The builder does not block creators from choosing a semantically odd variable as a percentage base, but it exposes type, usage, and warnings where appropriate.
 - ETH and ERC20 Commission Tokens are supported.
@@ -173,7 +173,7 @@ The MVP focuses on classic CommissionRoad execution: Commission Call for indepen
 - Pure domain tests cover Action Definition schema validation, Action Shape selection, target extraction, Action Variable validation, Step Output constraints, Read Step validity, Commission Formula validity, Generated Summary, snippet generation, and classic payload encoding.
 - Protocol config tests cover supported Action Chains, CommissionRoad addresses, ETH sentinel, Permit2 addresses, and explorer configuration completeness for Ethereum mainnet, Base, and Sepolia.
 - API route tests cover Published Action creation, schema rejection, random slug behavior, immutable canonical JSON storage, public read by slug, and not-found behavior.
-- Builder UI tests cover Action Chain selection, draft validation, ABI lookup states, manual ABI fallback, Action Variables, Contract Parameters, Call Value, method selection, live snippet updates, copy buttons, NFT selection, allowlist validation, and Share Action.
+- Builder UI tests cover Action Chain selection, draft validation, ABI lookup states, manual ABI fallback, Action Variables, Contract Parameters, Eth Value, method selection, live snippet updates, copy buttons, NFT selection, allowlist validation, and Share Action.
 - Action Page tests cover loading by slug, rendering without wallet connection, creator copy, Generated Summary, Technical Details, Action Variable form behavior, preflight checklist states, simulation states, and Execute Action enablement.
 - Chain and wallet behavior should be tested with mocked Wagmi, Viem, and network responses rather than live chain calls in CI.
 - Current Allowlist Check should be tested with mocked contract reads for disabled allowlist, fully allowed targets, missing creator targets, missing sweep helper targets, and missing Permit2 targets.

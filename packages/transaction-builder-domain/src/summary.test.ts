@@ -12,6 +12,7 @@ describe("generateSummary", () => {
       "Includes 1 sweep step that transfers all available balance for their configured asset.",
     );
     expect(summary.steps[0]).toContain("Lido stETH submit(address)");
+    expect(summary.steps[0]).toContain("with Eth Value stakeAmount");
     expect(summary.steps[1]).toContain("CommissionRoad sweepERC20Token");
   });
 

@@ -293,7 +293,7 @@ function StepEditor({
                 }),
               )
             }
-            label="Call Value"
+            label="Eth Value"
             onChange={(binding) => onUpdate({ ...step, callValue: binding })}
             stepOutputs={getAvailableStepOutputs(draft, index, "uint256")}
             type="uint256"
