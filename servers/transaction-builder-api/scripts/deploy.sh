@@ -23,6 +23,7 @@ ECR_IMAGE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITOR
 echo "Building transaction-builder-api ${IMAGE_TAG}"
 bun run --filter @transaction-builder/domain build
 bun run --filter @transaction-builder/database build
+bun run --cwd packages/transaction-builder-database build:migrate
 bun run --filter transaction-builder-api build
 
 echo "Building linux/amd64 Docker image"
@@ -31,7 +32,7 @@ docker buildx build --platform linux/amd64 \
   --build-arg BUILD_TIME="${BUILD_TIME}" \
   -t "${ECR_REPOSITORY}:${IMAGE_TAG}" \
   -f servers/transaction-builder-api/Dockerfile \
-  servers/transaction-builder-api \
+  . \
   --load
 
 echo "Logging into ECR"

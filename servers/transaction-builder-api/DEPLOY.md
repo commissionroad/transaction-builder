@@ -11,6 +11,21 @@ Actions and serve them back to share pages.
 4. Transaction builder UI built with `VITE_API_BASE_URL` pointing at that public
    API URL.
 
+Production currently uses:
+
+```sh
+API_HOST=builder-api.commissionroad.xyz
+VITE_API_BASE_URL=https://builder-api.commissionroad.xyz
+VITE_COMMISSIONROAD_API_BASE_URL=https://api.commissionroad.xyz
+```
+
+`builder-api.commissionroad.xyz` should be a DNS CNAME to the shared
+CommissionRoad load balancer:
+
+```sh
+commissionroad-alb-1177405763.us-east-1.elb.amazonaws.com
+```
+
 ## Environment
 
 Required:
@@ -41,6 +56,9 @@ DATABASE_URL="postgresql://..." bun run db:migrate
 The migration runner applies SQL files from
 `packages/transaction-builder-database/drizzle` and records applied files in
 `transaction_builder_migrations`, so it is safe to rerun.
+
+The ECS Docker image also bundles `/app/migrate.js` and `/app/drizzle` so
+production migrations can be run from a one-off ECS task in the same VPC as RDS.
 
 ## AWS ECS Path
 
@@ -85,8 +103,8 @@ LOG_GROUP=/ecs/transaction-builder-api
 After deploy:
 
 ```sh
-curl https://<api-host>/health
-curl https://<api-host>/ready
+curl https://builder-api.commissionroad.xyz/health
+curl https://builder-api.commissionroad.xyz/ready
 ```
 
 `/health` checks that the process is alive. `/ready` checks that the API can

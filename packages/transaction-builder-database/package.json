@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "tsc --noEmit",
+    "build:migrate": "bun build scripts/migrate.ts --outdir dist --target bun",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "bun run scripts/migrate.ts",
     "db:push": "drizzle-kit push",

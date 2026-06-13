@@ -1,0 +1,10 @@
+.git
+.turbo
+.playwright-mcp
+node_modules
+**/node_modules
+apps/transaction-builder-ui/dist
+servers/transaction-builder-api/.turbo
+*.local
+.env
+.env.*

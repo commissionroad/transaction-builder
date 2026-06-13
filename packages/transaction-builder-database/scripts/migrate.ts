@@ -7,11 +7,9 @@ const DEFAULT_DATABASE_URL =
   "postgresql://postgres:postgres@localhost:5432/transaction_builder";
 
 const databaseUrl = process.env.DATABASE_URL ?? DEFAULT_DATABASE_URL;
-const migrationsDir = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "drizzle",
-);
+const migrationsDir =
+  process.env.MIGRATIONS_DIR ??
+  join(dirname(fileURLToPath(import.meta.url)), "..", "drizzle");
 
 const client = postgres(databaseUrl, {
   max: 1,

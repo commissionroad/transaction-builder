@@ -5,7 +5,9 @@ WORKDIR /app
 RUN groupadd --system --gid 1001 appgroup && \
   useradd --system --uid 1001 --gid appgroup appuser
 
-COPY dist/index.js /app/index.js
+COPY servers/transaction-builder-api/dist/index.js /app/index.js
+COPY packages/transaction-builder-database/dist/migrate.js /app/migrate.js
+COPY packages/transaction-builder-database/drizzle /app/drizzle
 
 RUN chown -R appuser:appgroup /app
 
