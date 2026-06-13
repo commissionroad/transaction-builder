@@ -1,0 +1,10 @@
+{
+  "extends": "@transaction-builder/typescript-config/base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ESNext", "DOM"],
+    "types": ["bun"],
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"]
+}
