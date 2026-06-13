@@ -258,6 +258,10 @@ function getSemanticIssues(definition: ActionDefinitionV1): ValidationIssue[] {
         return;
       }
 
+      const isCallValueBinding = step.callValue === binding;
+      const expectedType = isCallValueBinding
+        ? "uint256"
+        : step.inputs[bindingIndex]?.type;
       const referencedStepIndex = stepIndexes.get(binding.stepId);
       if (referencedStepIndex === undefined) {
         issues.push({
@@ -279,6 +283,30 @@ function getSemanticIssues(definition: ActionDefinitionV1): ValidationIssue[] {
         issues.push({
           path: `steps.${stepIndex}.bindings.${bindingIndex}`,
           message: `Step Output index ${binding.outputIndex} does not exist on "${binding.stepId}"`,
+        });
+      } else {
+        const output = referencedStep.outputs[binding.outputIndex];
+        if (expectedType && output.type !== expectedType) {
+          issues.push({
+            path: `steps.${stepIndex}.bindings.${bindingIndex}`,
+            message: `Step Output "${binding.stepId}" produces ${output.type}, but this Contract Parameter expects ${expectedType}`,
+          });
+        }
+      }
+
+      if (referencedStep.outputs.length !== 1 || binding.outputIndex !== 0) {
+        issues.push({
+          path: `steps.${stepIndex}.bindings.${bindingIndex}`,
+          message:
+            "Step Output bindings currently require an earlier Action Step with exactly one output",
+        });
+      }
+
+      if (isCallValueBinding) {
+        issues.push({
+          path: `steps.${stepIndex}.callValue`,
+          message:
+            "Call Value cannot use a Step Output because ETH value must be known before execution",
         });
       }
 

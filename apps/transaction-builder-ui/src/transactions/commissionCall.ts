@@ -4,9 +4,17 @@ import {
   permit2Abi,
   getCommissionRoadAddresses,
 } from "@transaction-builder/commissionroad-protocol";
+import { setGlobalAdapter } from "@cowprotocol/sdk-common";
+import {
+  WeirollCommandFlags,
+  WeirollPlanner,
+  createWeirollContract,
+} from "@cowprotocol/sdk-weiroll";
+import { ViemAdapter } from "@cowprotocol/sdk-viem-adapter";
 import {
   createPermit2FundingCallArgs,
   createPermit2FundingRequest,
+  type ActionShape,
   getActionShape,
   validateDraft,
   type ActionDefinitionV1,
@@ -22,6 +30,7 @@ import {
   type Abi,
   type Address,
   type Hex,
+  type PublicClient,
 } from "viem";
 
 export type RawActionVariableValues = Record<string, string | boolean>;
@@ -39,6 +48,11 @@ export interface CommissionCallBatchItem {
   value: bigint;
 }
 
+export interface PreparedPermit2Funding {
+  amount: bigint;
+  target: Address;
+}
+
 export interface PreparedCommissionCall {
   address: Address;
   abi: typeof commissionRoadAbi;
@@ -49,16 +63,31 @@ export interface PreparedCommissionCall {
   commission: bigint;
   commissionToken: Address;
   batchCallData: CommissionCallBatchItem[];
-  permit2Funding?: {
-    amount: bigint;
-    target: Address;
-  };
+  permit2Funding?: PreparedPermit2Funding;
 }
+
+export interface PreparedCommissionPlan {
+  address: Address;
+  abi: typeof commissionRoadAbi;
+  functionName: "commissionPlan";
+  args: readonly [readonly Hex[], readonly Hex[], bigint, Address, bigint];
+  value: bigint;
+  chainId: ActionDefinitionV1["chainId"];
+  commission: bigint;
+  commissionToken: Address;
+  commands: readonly Hex[];
+  state: readonly Hex[];
+  permit2Funding?: PreparedPermit2Funding;
+}
+
+export type PreparedActionTransaction =
+  | PreparedCommissionCall
+  | PreparedCommissionPlan;
 
 export type PrepareCommissionCallResult =
   | {
       success: true;
-      prepared: PreparedCommissionCall;
+      prepared: PreparedActionTransaction;
     }
   | {
       success: false;
@@ -69,6 +98,7 @@ export type PreviewCommissionCallResult =
   | {
       success: true;
       preview: {
+        actionShape: ActionShape;
         batchCallData: CommissionCallBatchItem[];
         chainId: ActionDefinitionV1["chainId"];
         commission: bigint;
@@ -95,10 +125,6 @@ export function previewCommissionCall({
     return validation;
   }
 
-  if (getActionShape(definition) !== "commissionCall") {
-    return fail("steps", "Commission Plans are not executable in this MVP.");
-  }
-
   if (!definition.commissionRoadNftId) {
     return fail(
       "commissionRoadNftId",
@@ -114,12 +140,31 @@ export function previewCommissionCall({
     return parsedVariables;
   }
 
-  const batchResult = createBatchCallData({
-    definition,
-    parsedVariables: parsedVariables.values,
-  });
-  if (!batchResult.success) {
-    return batchResult;
+  const actionShape = getActionShape(definition);
+  let batchCallData: CommissionCallBatchItem[] = [];
+  let stepEthValue = 0n;
+
+  if (actionShape === "commissionCall") {
+    const batchResult = createBatchCallData({
+      definition,
+      parsedVariables: parsedVariables.values,
+    });
+    if (!batchResult.success) {
+      return batchResult;
+    }
+
+    batchCallData = batchResult.batchCallData;
+    stepEthValue = batchCallData.reduce((sum, item) => sum + item.value, 0n);
+  } else {
+    const planValueResult = getKnownStepEthValue({
+      definition,
+      parsedVariables: parsedVariables.values,
+    });
+    if (!planValueResult.success) {
+      return planValueResult;
+    }
+
+    stepEthValue = planValueResult.value;
   }
 
   const commissionResult = getCommissionAmount({
@@ -135,7 +180,7 @@ export function previewCommissionCall({
       ? ETH_SENTINEL
       : definition.commissionToken.address;
   const totalValue =
-    batchResult.batchCallData.reduce((sum, item) => sum + item.value, 0n) +
+    stepEthValue +
     (definition.commissionToken.kind === "eth"
       ? commissionResult.commission
       : 0n);
@@ -143,7 +188,8 @@ export function previewCommissionCall({
   return {
     success: true,
     preview: {
-      batchCallData: batchResult.batchCallData,
+      actionShape,
+      batchCallData,
       chainId: definition.chainId,
       commission: commissionResult.commission,
       commissionToken,
@@ -157,10 +203,12 @@ export function previewCommissionCall({
 export function prepareCommissionCall({
   definition,
   permit2Authorization,
+  publicClient,
   rawValues,
 }: {
   definition: ActionDefinitionV1;
   permit2Authorization?: Permit2Authorization;
+  publicClient?: PublicClient;
   rawValues: RawActionVariableValues;
 }): PrepareCommissionCallResult {
   const preview = previewCommissionCall({ definition, rawValues });
@@ -176,18 +224,74 @@ export function prepareCommissionCall({
     );
   }
 
-  const addresses = getCommissionRoadAddresses(definition.chainId);
-  const batchCallData = [...preview.preview.batchCallData];
-  let permit2Funding: PreparedCommissionCall["permit2Funding"];
+  const parsedVariables = parseActionVariables({
+    variables: definition.variables,
+    rawValues,
+  });
+  if (!parsedVariables.success) {
+    return parsedVariables;
+  }
 
-  if (definition.commissionToken.kind === "erc20") {
-    if (!permit2Authorization) {
+  const addresses = getCommissionRoadAddresses(definition.chainId);
+  let permit2Funding: PreparedPermit2Funding | undefined;
+
+  if (definition.commissionToken.kind === "erc20" && !permit2Authorization) {
+    return fail(
+      "permit2",
+      "Sign a Permit2 authorization for the exact commission amount before executing.",
+    );
+  }
+
+  if (preview.preview.actionShape === "commissionPlan") {
+    if (!publicClient) {
       return fail(
-        "permit2",
-        "Sign a Permit2 authorization for the exact commission amount before executing.",
+        "publicClient",
+        "Unable to prepare this Commission Plan without a public client.",
       );
     }
 
+    const planResult = createCommissionPlan({
+      addresses,
+      commission: preview.preview.commission,
+      definition,
+      parsedVariables: parsedVariables.values,
+      permit2Authorization,
+      publicClient,
+    });
+    if (!planResult.success) {
+      return planResult;
+    }
+
+    const address = addresses.commissionRoad;
+    const args = [
+      planResult.commands,
+      planResult.state,
+      BigInt(nftId),
+      preview.preview.commissionToken,
+      preview.preview.commission,
+    ] as const;
+
+    return {
+      success: true,
+      prepared: {
+        address,
+        abi: commissionRoadAbi,
+        functionName: "commissionPlan",
+        args,
+        value: preview.preview.totalEthValue,
+        chainId: preview.preview.chainId,
+        commission: preview.preview.commission,
+        commissionToken: preview.preview.commissionToken,
+        commands: planResult.commands,
+        state: planResult.state,
+        permit2Funding: planResult.permit2Funding,
+      },
+    };
+  }
+
+  const batchCallData = [...preview.preview.batchCallData];
+
+  if (definition.commissionToken.kind === "erc20" && permit2Authorization) {
     const request = createPermit2FundingRequest({
       commission: preview.preview.commission,
       commissionRoadAddress: addresses.commissionRoad,
@@ -217,7 +321,7 @@ export function prepareCommissionCall({
     };
   }
 
-  const address = getCommissionRoadAddresses(definition.chainId).commissionRoad;
+  const address = addresses.commissionRoad;
   const args = [
     batchCallData,
     BigInt(nftId),
@@ -240,6 +344,185 @@ export function prepareCommissionCall({
       permit2Funding,
     },
   };
+}
+
+function createCommissionPlan({
+  addresses,
+  commission,
+  definition,
+  parsedVariables,
+  permit2Authorization,
+  publicClient,
+}: {
+  addresses: ReturnType<typeof getCommissionRoadAddresses>;
+  commission: bigint;
+  definition: ActionDefinitionV1;
+  parsedVariables: Record<string, unknown>;
+  permit2Authorization?: Permit2Authorization;
+  publicClient: PublicClient;
+}):
+  | {
+      success: true;
+      commands: readonly Hex[];
+      state: readonly Hex[];
+      permit2Funding?: PreparedPermit2Funding;
+    }
+  | { success: false; issues: ValidationIssue[] } {
+  try {
+    const adapter = new ViemAdapter({ provider: publicClient });
+    setGlobalAdapter(adapter);
+    const planner = new WeirollPlanner();
+    const stepOutputs = new Map<string, unknown>();
+    let permit2Funding: PreparedPermit2Funding | undefined;
+
+    if (definition.commissionToken.kind === "erc20") {
+      if (!permit2Authorization) {
+        return fail(
+          "permit2",
+          "Sign a Permit2 authorization for the exact commission amount before executing.",
+        );
+      }
+
+      const request = createPermit2FundingRequest({
+        commission,
+        commissionRoadAddress: addresses.commissionRoad,
+        definition,
+        deadline: permit2Authorization.deadline,
+        nonce: permit2Authorization.nonce,
+        owner: permit2Authorization.owner,
+        permit2Address: addresses.permit2,
+      });
+      const permit2Contract = createWeirollContract(
+        adapter.getContract(addresses.permit2, permit2Abi as Abi),
+        WeirollCommandFlags.CALL,
+      );
+      planner.add(
+        permit2Contract.functions[
+          "permitTransferFrom(tuple,tuple,address,bytes)"
+        ](
+          ...createPermit2FundingCallArgs({
+            request,
+            signature: permit2Authorization.signature,
+          }),
+        ),
+      );
+
+      permit2Funding = {
+        amount: commission,
+        target: addresses.permit2,
+      };
+    }
+
+    for (const step of definition.steps) {
+      const result = addStepToPlanner({
+        adapter,
+        definition,
+        parsedVariables,
+        planner,
+        step,
+        stepOutputs,
+      });
+      if (!result.success) {
+        return result;
+      }
+    }
+
+    const plan = planner.plan();
+    return {
+      success: true,
+      commands: plan.commands as Hex[],
+      state: plan.state as Hex[],
+      permit2Funding,
+    };
+  } catch (error) {
+    return fail(
+      "steps",
+      error instanceof Error
+        ? error.message
+        : "Commission Plan could not be prepared.",
+    );
+  }
+}
+
+function addStepToPlanner({
+  adapter,
+  definition,
+  parsedVariables,
+  planner,
+  step,
+  stepOutputs,
+}: {
+  adapter: ViemAdapter;
+  definition: ActionDefinitionV1;
+  parsedVariables: Record<string, unknown>;
+  planner: WeirollPlanner;
+  step: ActionStep;
+  stepOutputs: Map<string, unknown>;
+}): { success: true } | { success: false; issues: ValidationIssue[] } {
+  const contract = definition.contracts.find(
+    (candidate) => candidate.id === step.contractId,
+  );
+  if (!contract) {
+    return fail("steps", `Unknown contract "${step.contractId}".`);
+  }
+
+  const weirollContract = createWeirollContract(
+    adapter.getContract(step.target, contract.abi as Abi),
+    getWeirollCommandFlags(step),
+  );
+  const functionBuilder =
+    weirollContract.functions[step.functionSignature] ??
+    weirollContract.functions[step.functionName];
+  if (!functionBuilder) {
+    return fail(
+      "steps",
+      `Could not find ${step.functionSignature} on ${step.target}.`,
+    );
+  }
+
+  const args: unknown[] = [];
+  for (const [index, binding] of step.parameters.entries()) {
+    const result = resolveBinding({
+      binding,
+      abiType: step.inputs[index]?.type,
+      parsedVariables,
+      stepOutputs,
+    });
+
+    if (!result.success) {
+      return { success: false, issues: [result.issue] };
+    }
+
+    args.push(result.value);
+  }
+
+  let call = functionBuilder(...args);
+  if (step.callValue) {
+    const valueResult = resolveBinding({
+      binding: step.callValue,
+      abiType: "uint256",
+      parsedVariables,
+      stepOutputs,
+    });
+    if (!valueResult.success) {
+      return { success: false, issues: [valueResult.issue] };
+    }
+
+    call = call.withValue(BigInt(String(valueResult.value)) as never);
+  }
+
+  const output = planner.add(call);
+  if (step.outputs.length === 1) {
+    if (!output) {
+      return fail(
+        "steps",
+        `${step.functionSignature} did not produce a usable Step Output.`,
+      );
+    }
+    stepOutputs.set(getStepOutputKey(step.id, 0), output);
+  }
+
+  return { success: true };
 }
 
 function parseActionVariables({
@@ -389,14 +672,47 @@ function createBatchCallData({
   return { success: true, batchCallData };
 }
 
+function getKnownStepEthValue({
+  definition,
+  parsedVariables,
+}: {
+  definition: ActionDefinitionV1;
+  parsedVariables: Record<string, unknown>;
+}):
+  | { success: true; value: bigint }
+  | { success: false; issues: ValidationIssue[] } {
+  let value = 0n;
+
+  for (const step of definition.steps) {
+    if (!step.callValue) {
+      continue;
+    }
+
+    const result = resolveBinding({
+      binding: step.callValue,
+      abiType: "uint256",
+      parsedVariables,
+    });
+    if (!result.success) {
+      return { success: false, issues: [result.issue] };
+    }
+
+    value += BigInt(String(result.value));
+  }
+
+  return { success: true, value };
+}
+
 function resolveBinding({
   binding,
   abiType,
   parsedVariables,
+  stepOutputs,
 }: {
   binding: ContractParameterBinding;
   abiType?: string;
   parsedVariables: Record<string, unknown>;
+  stepOutputs?: Map<string, unknown>;
 }):
   | { success: true; value: unknown }
   | { success: false; issue: ValidationIssue } {
@@ -414,6 +730,13 @@ function resolveBinding({
   }
 
   if (binding.kind === "stepOutput") {
+    const value = stepOutputs?.get(
+      getStepOutputKey(binding.stepId, binding.outputIndex),
+    );
+    if (value !== undefined) {
+      return { success: true, value };
+    }
+
     return {
       success: false,
       issue: {
@@ -439,6 +762,18 @@ function parseFixedValue(value: unknown, abiType?: string): unknown {
   }
 
   return value;
+}
+
+function getWeirollCommandFlags(step: ActionStep): WeirollCommandFlags {
+  if (step.stateMutability === "view" || step.stateMutability === "pure") {
+    return WeirollCommandFlags.STATICCALL;
+  }
+
+  return WeirollCommandFlags.CALL;
+}
+
+function getStepOutputKey(stepId: string, outputIndex: number): string {
+  return `${stepId}:${outputIndex}`;
 }
 
 function getCommissionAmount({

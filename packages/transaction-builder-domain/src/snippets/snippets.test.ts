@@ -44,10 +44,25 @@ describe("snippet generation", () => {
     expect(snippet).not.toContain("useSwitchChain");
   });
 
-  it("rejects dependent Actions until Commission Plan snippets are implemented", () => {
-    expect(() => generateViemSnippet(createDependentAction())).toThrow(
-      "independent Actions only",
+  it("generates Viem Commission Plan snippets for Step Output bindings", () => {
+    const snippet = generateViemSnippet(createDependentAction());
+
+    expect(snippet).toContain("@cowprotocol/sdk-weiroll");
+    expect(snippet).toContain("new WeirollPlanner()");
+    expect(snippet).toContain('functionName: "commissionPlan"');
+    expect(snippet).toContain("stepOutput_readBalance_0");
+    expect(snippet).toContain(
+      'functions["transfer(address,uint256)"](recipient, stepOutput_readBalance_0)',
     );
+  });
+
+  it("generates Wagmi Commission Plan snippets for Step Output bindings", () => {
+    const snippet = generateWagmiSnippet(createDependentAction());
+
+    expect(snippet).toContain("usePublicClient");
+    expect(snippet).toContain("setGlobalAdapter(adapter)");
+    expect(snippet).toContain('functionName: "commissionPlan"');
+    expect(snippet).toContain("commands as Hex[]");
   });
 
   it("generates Viem Permit2 funding code for ERC20 commissions", () => {
@@ -73,6 +88,26 @@ describe("snippet generation", () => {
     expect(snippet).toContain("signTypedDataAsync");
     expect(snippet).toContain('functionName: "permitTransferFrom"');
     expect(snippet).toContain("publicClient.waitForTransactionReceipt");
+  });
+
+  it("generates Permit2 funding code for ERC20 Commission Plans", () => {
+    const snippet = generateViemSnippet({
+      ...createDependentAction(),
+      commissionToken: {
+        kind: "erc20" as const,
+        address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as const,
+        symbol: "USDC",
+        decimals: 6,
+      },
+      commissionFormula: {
+        kind: "flat" as const,
+        amount: "0.25",
+      },
+    });
+
+    expect(snippet).toContain("permitTransferFrom(tuple,tuple,address,bytes)");
+    expect(snippet).toContain("planner.add(");
+    expect(snippet).toContain('functionName: "commissionPlan"');
   });
 });
 

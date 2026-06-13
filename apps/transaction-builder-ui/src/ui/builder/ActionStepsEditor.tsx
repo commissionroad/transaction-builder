@@ -413,6 +413,7 @@ function getAvailableStepOutputs(
 ): AvailableStepOutput[] {
   return draft.steps
     .slice(0, currentStepIndex)
+    .filter((candidate) => candidate.outputs.length === 1)
     .flatMap((candidate, stepIndex) =>
       candidate.outputs.map((output, outputIndex) => ({
         stepId: candidate.id,

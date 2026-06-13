@@ -20,6 +20,7 @@ import {
 import { formatUnits } from "viem";
 import {
   useAccount,
+  usePublicClient,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
@@ -32,6 +33,7 @@ export function ActionVariableForm({
   definition: ActionDefinitionV1;
 }) {
   const { isConnected } = useAccount();
+  const publicClient = usePublicClient({ chainId: definition.chainId });
   const { openConnectModal } = useConnectModal();
   const [rawValues, setRawValues] = useState<RawActionVariableValues>(() =>
     Object.fromEntries(
@@ -54,9 +56,10 @@ export function ActionVariableForm({
           permit2Preflight.kind === "erc20"
             ? permit2Preflight.authorization
             : undefined,
+        publicClient,
         rawValues,
       }),
-    [definition, permit2Preflight, rawValues],
+    [definition, permit2Preflight, publicClient, rawValues],
   );
   const {
     data: hash,

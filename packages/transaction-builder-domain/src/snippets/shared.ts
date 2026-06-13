@@ -47,14 +47,15 @@ export function generateActionFunctionName(
 }
 
 export function createSnippetContext(definition: ActionDefinitionV1) {
-  assertSnippetSupported(definition);
-
   const addresses = getCommissionRoadAddresses(definition.chainId);
   const variables = definition.variables;
   const functionName = generateActionFunctionName(definition);
+  const actionShape = getActionShape(definition);
 
   return {
+    actionShape,
     addresses,
+    definition,
     functionName,
     variableArgs: variables.map((variable) => variable.name).join(", "),
     variables,
@@ -134,6 +135,63 @@ function formatBinding(
   }
 
   return `/* Step Output ${binding.stepId}[${binding.outputIndex}] is available in commissionPlan snippets */`;
+}
+
+export function formatPlanStepLines(definition: ActionDefinitionV1): string {
+  return definition.steps
+    .map((step, index) => formatPlanStep(step, index))
+    .join("\n\n");
+}
+
+function formatPlanStep(step: ActionStep, index: number): string {
+  const stepName = `step${index + 1}_${toSafePropertyName(step.id)}`;
+  const contractName = `${stepName}Contract`;
+  const callName = `${stepName}Call`;
+  const outputName = getStepOutputVariableName(step.id, 0);
+  const flag =
+    step.stateMutability === "view" || step.stateMutability === "pure"
+      ? "WeirollCommandFlags.STATICCALL"
+      : "WeirollCommandFlags.CALL";
+  const args = step.parameters
+    .map((binding, parameterIndex) =>
+      formatPlanBinding(binding, step.inputs[parameterIndex]?.type),
+    )
+    .join(", ");
+  const callValue = step.callValue
+    ? `.withValue(${formatPlanBinding(step.callValue, "uint256")} as any)`
+    : "";
+  const addLine =
+    step.outputs.length === 1
+      ? `  const ${outputName} = planner.add(${callName});
+  if (!${outputName}) {
+    throw new Error(${JSON.stringify(`${step.functionSignature} did not produce a Step Output.`)});
+  }`
+      : `  planner.add(${callName});`;
+
+  return `  const ${contractName} = createWeirollContract(
+    adapter.getContract(${JSON.stringify(step.target)} as Address, ${toSafePropertyName(step.contractId)}Abi),
+    ${flag},
+  );
+  const ${callName} = ${contractName}.functions[${JSON.stringify(step.functionSignature)}](${args})${callValue};
+${addLine}`;
+}
+
+function formatPlanBinding(
+  binding: ContractParameterBinding,
+  abiType?: string,
+): string {
+  if (binding.kind === "stepOutput") {
+    return getStepOutputVariableName(binding.stepId, binding.outputIndex);
+  }
+
+  return formatBinding(binding, abiType);
+}
+
+function getStepOutputVariableName(
+  stepId: string,
+  outputIndex: number,
+): string {
+  return `stepOutput_${toSafePropertyName(stepId)}_${outputIndex}`;
 }
 
 function formatFixedValue(value: unknown, abiType?: string): string {

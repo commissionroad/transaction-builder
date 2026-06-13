@@ -1,7 +1,6 @@
 import {
   generateViemSnippet,
   generateWagmiSnippet,
-  getActionShape,
   validateDraft,
 } from "@transaction-builder/domain";
 import { Check, Copy } from "lucide-react";
@@ -19,14 +18,6 @@ export function SnippetPanel({ draft }: { draft: BuilderDraft }) {
       return {
         ok: false as const,
         message: "Complete the Action Definition to generate snippets.",
-      };
-    }
-
-    if (getActionShape(validation.definition) !== "commissionCall") {
-      return {
-        ok: false as const,
-        message:
-          "Commission Plan snippets unlock with Read Step and Step Output support.",
       };
     }
 

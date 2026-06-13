@@ -67,6 +67,80 @@ describe("validateDraft", () => {
     );
   });
 
+  it("rejects Step Output type mismatches", () => {
+    const action = createDependentAction();
+    const result = validateDraft({
+      ...action,
+      steps: [
+        action.steps[0],
+        {
+          ...action.steps[1],
+          parameters: [
+            { kind: "stepOutput", stepId: "readBalance", outputIndex: 0 },
+            action.steps[1].parameters[1],
+          ],
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    expect(getIssueMessages(result)).toContain(
+      'Step Output "readBalance" produces uint256, but this Contract Parameter expects address',
+    );
+  });
+
+  it("rejects Step Output bindings from multi-output reads", () => {
+    const action = createDependentAction();
+    const result = validateDraft({
+      ...action,
+      steps: [
+        {
+          ...action.steps[0],
+          outputs: [
+            { name: "balance", type: "uint256" },
+            { name: "timestamp", type: "uint256" },
+          ],
+        },
+        {
+          ...action.steps[1],
+          parameters: [
+            action.steps[1].parameters[0],
+            { kind: "stepOutput", stepId: "readBalance", outputIndex: 1 },
+          ],
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    expect(getIssueMessages(result)).toContain(
+      "Step Output bindings currently require an earlier Action Step with exactly one output",
+    );
+  });
+
+  it("rejects Step Output bindings for Call Value", () => {
+    const action = createDependentAction();
+    const result = validateDraft({
+      ...action,
+      steps: [
+        action.steps[0],
+        {
+          ...action.steps[1],
+          stateMutability: "payable",
+          callValue: {
+            kind: "stepOutput",
+            stepId: "readBalance",
+            outputIndex: 0,
+          },
+        },
+      ],
+    });
+
+    expect(result.success).toBe(false);
+    expect(getIssueMessages(result)).toContain(
+      "Call Value cannot use a Step Output because ETH value must be known before execution",
+    );
+  });
+
   it("rejects missing Contract Parameter bindings", () => {
     const action = createLidoSweepAction();
     const result = validateDraft({
