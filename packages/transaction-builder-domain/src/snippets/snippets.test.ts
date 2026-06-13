@@ -90,6 +90,44 @@ describe("snippet generation", () => {
     expect(snippet).toContain("publicClient.waitForTransactionReceipt");
   });
 
+  it("keeps ETH Action snippet ABIs scoped to selected calls", () => {
+    const snippet = generateViemSnippet(createLidoSweepAction());
+
+    expect(snippet).toContain('"name": "commissionCall"');
+    expect(snippet).toContain('"name": "submit"');
+    expect(snippet).toContain('"name": "sweepERC20Token"');
+    expect(snippet).toContain("const commissionRoadContractAbi");
+    expect(snippet).toContain("abi: commissionRoadContractAbi");
+    expect(snippet).not.toContain("commissionCallFeePercent");
+    expect(snippet).not.toContain("sweepERC1155Token");
+    expect(snippet).not.toContain("setAllowlist");
+    expect(snippet).not.toContain('"name": "decimals"');
+  });
+
+  it("keeps Commission Plan snippet ABIs scoped to selected calls", () => {
+    const snippet = generateWagmiSnippet(createDependentAction());
+
+    expect(snippet).toContain('"name": "commissionPlan"');
+    expect(snippet).toContain('"name": "balanceOf"');
+    expect(snippet).toContain('"name": "transfer"');
+    expect(snippet).not.toContain('"name": "commissionCall"');
+    expect(snippet).not.toContain("sweepERC20Token");
+    expect(snippet).not.toContain("mintTo");
+  });
+
+  it("keeps ERC20 funding ABIs scoped to allowance, approval, and Permit2 transfer", () => {
+    const snippet = generateViemSnippet(createErc20CommissionAction());
+
+    expect(snippet).toContain('"name": "allowance"');
+    expect(snippet).toContain('"name": "approve"');
+    expect(snippet).toContain('"name": "permitTransferFrom"');
+    expect(snippet).not.toContain('"name": "decimals"');
+    expect(snippet).not.toContain('"name": "symbol"');
+    expect(snippet).not.toContain('"name": "DOMAIN_SEPARATOR"');
+    expect(snippet).not.toContain('"name": "permitWitnessTransferFrom"');
+    expect(snippet).not.toContain('"name": "transferFrom"');
+  });
+
   it("generates Permit2 funding code for ERC20 Commission Plans", () => {
     const snippet = generateViemSnippet({
       ...createDependentAction(),

@@ -1,9 +1,5 @@
 import type { ActionDefinitionV1 } from "../schema";
-import {
-  createSnippetContext,
-  formatPlanStepLines,
-  type SnippetOptions,
-} from "./shared";
+import { createSnippetContext, type SnippetOptions } from "./shared";
 
 export function generateViemSnippet(
   definition: ActionDefinitionV1,
@@ -252,7 +248,7 @@ ${context.variables.map((variable) => `  ${variable.name},`).join("\n")}
   const planner = new WeirollPlanner();
   const commission = ${context.commissionExpression};
 ${permit2Setup}
-${formatPlanStepLines(context.definition)}
+${context.planStepLines}
 
   const { commands, state } = planner.plan();
 

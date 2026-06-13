@@ -51,6 +51,10 @@ export function createSnippetContext(definition: ActionDefinitionV1) {
   const variables = definition.variables;
   const functionName = generateActionFunctionName(definition);
   const actionShape = getActionShape(definition);
+  const contractAbiVariableNames = getContractAbiVariableNames(definition);
+  const getContractAbiVariableName = (contractId: string) =>
+    contractAbiVariableNames.get(contractId) ??
+    `${toSafePropertyName(contractId)}Abi`;
 
   return {
     actionShape,
@@ -63,13 +67,17 @@ export function createSnippetContext(definition: ActionDefinitionV1) {
       .map((variable) => `  ${variable.name}: ${getTypeScriptType(variable)};`)
       .join("\n"),
     contractAbiLines: definition.contracts
+      .filter((contract) => contractAbiVariableNames.has(contract.id))
       .map((contract) => {
-        const key = toSafePropertyName(contract.id);
-        return `const ${key}Abi = ${JSON.stringify(contract.abi, null, 2)} as const;`;
+        const abi = getContractStepAbi(
+          contract.abi,
+          definition.steps.filter((step) => step.contractId === contract.id),
+        );
+        return `const ${getContractAbiVariableName(contract.id)} = ${JSON.stringify(abi, null, 2)} as const;`;
       })
       .join("\n\n"),
     batchCallLines: definition.steps
-      .map((step) => formatBatchCall(step))
+      .map((step) => formatBatchCall(step, getContractAbiVariableName))
       .join(",\n"),
     chainId: definition.chainId,
     commissionExpression: formatCommissionExpression(definition),
@@ -79,10 +87,20 @@ export function createSnippetContext(definition: ActionDefinitionV1) {
       definition.commissionToken.kind === "eth"
         ? ETH_SENTINEL
         : definition.commissionToken.address,
-    commissionRoadAbiLiteral: JSON.stringify(commissionRoadAbi, null, 2),
-    erc20AbiLiteral: JSON.stringify(erc20Abi, null, 2),
+    commissionRoadAbiLiteral: JSON.stringify(
+      getNamedAbiFunctions(commissionRoadAbi, [
+        actionShape === "commissionPlan" ? "commissionPlan" : "commissionCall",
+      ]),
+      null,
+      2,
+    ),
+    erc20AbiLiteral: JSON.stringify(
+      getNamedAbiFunctions(erc20Abi, ["allowance", "approve"]),
+      null,
+      2,
+    ),
     nftId: definition.commissionRoadNftId ?? "0",
-    permit2AbiLiteral: JSON.stringify(permit2Abi, null, 2),
+    permit2AbiLiteral: JSON.stringify(getPermit2TransferFromAbi(), null, 2),
     permit2Address: addresses.permit2,
     permit2TypedDataTypesLiteral: JSON.stringify(
       {
@@ -103,14 +121,20 @@ export function createSnippetContext(definition: ActionDefinitionV1) {
     totalValueExpression: formatTotalValueExpression(definition),
     usesFlatCommission: definition.commissionFormula.kind === "flat",
     usesPermit2Funding: definition.commissionToken.kind === "erc20",
+    planStepLines: formatPlanStepLines(definition, getContractAbiVariableName),
   };
 }
 
-function formatBatchCall(step: ActionStep): string {
+type ContractAbiVariableNameResolver = (contractId: string) => string;
+
+function formatBatchCall(
+  step: ActionStep,
+  getContractAbiVariableName: ContractAbiVariableNameResolver,
+): string {
   return `  {
     target: ${JSON.stringify(step.target)},
     callData: encodeFunctionData({
-      abi: ${toSafePropertyName(step.contractId)}Abi,
+      abi: ${getContractAbiVariableName(step.contractId)},
       functionName: ${JSON.stringify(step.functionName)},
       args: [${step.parameters
         .map((binding, index) =>
@@ -137,13 +161,23 @@ function formatBinding(
   return `/* Step Output ${binding.stepId}[${binding.outputIndex}] is available in commissionPlan snippets */`;
 }
 
-export function formatPlanStepLines(definition: ActionDefinitionV1): string {
+export function formatPlanStepLines(
+  definition: ActionDefinitionV1,
+  getContractAbiVariableName: ContractAbiVariableNameResolver = (contractId) =>
+    `${toSafePropertyName(contractId)}Abi`,
+): string {
   return definition.steps
-    .map((step, index) => formatPlanStep(step, index))
+    .map((step, index) =>
+      formatPlanStep(step, index, getContractAbiVariableName),
+    )
     .join("\n\n");
 }
 
-function formatPlanStep(step: ActionStep, index: number): string {
+function formatPlanStep(
+  step: ActionStep,
+  index: number,
+  getContractAbiVariableName: ContractAbiVariableNameResolver,
+): string {
   const stepName = `step${index + 1}_${toSafePropertyName(step.id)}`;
   const contractName = `${stepName}Contract`;
   const callName = `${stepName}Call`;
@@ -169,7 +203,7 @@ function formatPlanStep(step: ActionStep, index: number): string {
       : `  planner.add(${callName});`;
 
   return `  const ${contractName} = createWeirollContract(
-    adapter.getContract(${JSON.stringify(step.target)} as Address, ${toSafePropertyName(step.contractId)}Abi),
+    adapter.getContract(${JSON.stringify(step.target)} as Address, ${getContractAbiVariableName(step.contractId)}),
     ${flag},
   );
   const ${callName} = ${contractName}.functions[${JSON.stringify(step.functionSignature)}](${args})${callValue};
@@ -243,6 +277,179 @@ function formatTotalValueExpression(definition: ActionDefinitionV1): string {
 
 function isIntegerType(abiType: string | undefined): boolean {
   return !!abiType && (abiType.startsWith("uint") || abiType.startsWith("int"));
+}
+
+type AbiFunctionLike = {
+  type?: unknown;
+  name?: unknown;
+  inputs?: readonly AbiParameterLike[];
+  outputs?: readonly AbiParameterLike[];
+  stateMutability?: unknown;
+};
+
+type AbiParameterLike = {
+  name?: unknown;
+  type?: unknown;
+  internalType?: unknown;
+  components?: unknown;
+};
+
+function getContractAbiVariableNames(
+  definition: ActionDefinitionV1,
+): Map<string, string> {
+  const usedContractIds = new Set(
+    definition.steps.map((step) => step.contractId),
+  );
+  const reservedNames = new Set([
+    "commissionRoadAbi",
+    "erc20Abi",
+    "permit2Abi",
+    "permit2TypedDataTypes",
+  ]);
+  const usedNames = new Set(reservedNames);
+  const names = new Map<string, string>();
+
+  definition.contracts
+    .filter((contract) => usedContractIds.has(contract.id))
+    .forEach((contract) => {
+      const safeName = toSafePropertyName(contract.id);
+      const baseName = `${safeName}Abi`;
+      const fallbackBaseName = `${safeName}ContractAbi`;
+      let candidate = reservedNames.has(baseName) ? fallbackBaseName : baseName;
+      let suffix = 2;
+
+      while (usedNames.has(candidate)) {
+        candidate = `${fallbackBaseName}${suffix}`;
+        suffix += 1;
+      }
+
+      usedNames.add(candidate);
+      names.set(contract.id, candidate);
+    });
+
+  return names;
+}
+
+function getContractStepAbi(
+  contractAbi: readonly unknown[],
+  steps: readonly ActionStep[],
+): unknown[] {
+  const fragments: unknown[] = [];
+  const seenSignatures = new Set<string>();
+
+  steps.forEach((step) => {
+    if (seenSignatures.has(step.functionSignature)) {
+      return;
+    }
+
+    seenSignatures.add(step.functionSignature);
+    fragments.push(
+      findStepAbiFragment(contractAbi, step) ?? createStepAbiFragment(step),
+    );
+  });
+
+  return fragments;
+}
+
+function findStepAbiFragment(
+  contractAbi: readonly unknown[],
+  step: ActionStep,
+): AbiFunctionLike | undefined {
+  const candidates = contractAbi
+    .filter(isAbiFunctionLike)
+    .filter((fragment) => fragment.name === step.functionName);
+  const exactMatch = candidates.find(
+    (fragment) => getFunctionSignature(fragment) === step.functionSignature,
+  );
+
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const inputTypeMatch = candidates.find(
+    (fragment) =>
+      getInputTypes(fragment).join(",") ===
+      step.inputs.map((input) => input.type).join(","),
+  );
+
+  if (inputTypeMatch) {
+    return inputTypeMatch;
+  }
+
+  return candidates.length === 1 ? candidates[0] : undefined;
+}
+
+function createStepAbiFragment(step: ActionStep): AbiFunctionLike {
+  return {
+    type: "function",
+    name: step.functionName,
+    inputs: step.inputs.map((input) => ({
+      name: input.name ?? "",
+      type: input.type,
+    })),
+    outputs: step.outputs.map((output) => ({
+      name: output.name ?? "",
+      type: output.type,
+    })),
+    stateMutability: step.stateMutability,
+  };
+}
+
+function getNamedAbiFunctions(
+  abi: readonly unknown[],
+  names: readonly string[],
+): unknown[] {
+  const nameSet = new Set(names);
+  const fragments = abi
+    .filter(isAbiFunctionLike)
+    .filter((fragment) => nameSet.has(String(fragment.name)));
+  const foundNames = new Set(
+    fragments.map((fragment) => String(fragment.name)),
+  );
+  const missingNames = names.filter((name) => !foundNames.has(name));
+
+  if (missingNames.length) {
+    throw new Error(
+      `Required ABI functions are missing: ${missingNames.join(", ")}`,
+    );
+  }
+
+  return fragments;
+}
+
+function getPermit2TransferFromAbi(): unknown[] {
+  const fragment = permit2Abi
+    .filter(isAbiFunctionLike)
+    .find(
+      (candidate) =>
+        candidate.name === "permitTransferFrom" &&
+        candidate.inputs?.length === 4,
+    );
+
+  if (!fragment) {
+    throw new Error("Permit2 permitTransferFrom ABI function is missing.");
+  }
+
+  return [fragment];
+}
+
+function isAbiFunctionLike(value: unknown): value is AbiFunctionLike {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    (value as AbiFunctionLike).type === "function" &&
+    typeof (value as AbiFunctionLike).name === "string"
+  );
+}
+
+function getFunctionSignature(fragment: AbiFunctionLike): string {
+  return `${String(fragment.name)}(${getInputTypes(fragment).join(",")})`;
+}
+
+function getInputTypes(fragment: AbiFunctionLike): string[] {
+  return (fragment.inputs ?? [])
+    .map((input) => input.type)
+    .filter((type): type is string => typeof type === "string");
 }
 
 function getTypeScriptType(variable: ActionVariable): string {

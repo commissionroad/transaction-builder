@@ -1,9 +1,5 @@
 import type { ActionDefinitionV1 } from "../schema";
-import {
-  createSnippetContext,
-  formatPlanStepLines,
-  type SnippetOptions,
-} from "./shared";
+import { createSnippetContext, type SnippetOptions } from "./shared";
 
 export function generateWagmiSnippet(
   definition: ActionDefinitionV1,
@@ -288,7 +284,7 @@ ${signHook}  const { writeContractAsync, ...writeState } = useWriteContract();
       const planner = new WeirollPlanner();
       const commission = ${context.commissionExpression};
 ${permit2Setup}
-${formatPlanStepLines(context.definition)
+${context.planStepLines
   .split("\n")
   .map((line) => `      ${line}`)
   .join("\n")}
