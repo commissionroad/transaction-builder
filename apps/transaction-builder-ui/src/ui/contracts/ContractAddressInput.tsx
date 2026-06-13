@@ -118,10 +118,7 @@ export function ContractAddressInput({
       {query.isError ? (
         <div className="mt-3 flex gap-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
-          <span>
-            ABI lookup failed. Paste a verified ABI below if the explorer cannot
-            resolve this contract.
-          </span>
+          <span>{getLookupErrorMessage(query.error)}</span>
         </div>
       ) : null}
 
@@ -165,4 +162,13 @@ export function ContractAddressInput({
 
 function isAddress(value: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(value);
+}
+
+function getLookupErrorMessage(error: Error | null): string {
+  const message = error?.message;
+  if (!message) {
+    return "ABI lookup failed. Paste a verified ABI below if the explorer cannot resolve this contract.";
+  }
+
+  return `${message}. Paste a verified ABI below if the explorer cannot resolve this contract.`;
 }

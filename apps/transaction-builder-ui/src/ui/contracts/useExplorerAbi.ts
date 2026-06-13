@@ -99,6 +99,7 @@ async function fetchExplorerContract({
 }): Promise<ExplorerContract> {
   const explorer = getExplorerConfig(chainId);
   const url = new URL(explorer.apiUrl);
+  url.searchParams.set("chainid", String(chainId));
   url.searchParams.set("module", "contract");
   url.searchParams.set("action", "getsourcecode");
   url.searchParams.set("address", address);
@@ -110,7 +111,9 @@ async function fetchExplorerContract({
   const payload = (await response.json()) as ExplorerAbiResult;
 
   if (payload.status !== "1" || !Array.isArray(payload.result)) {
-    throw new Error("ABI lookup failed");
+    throw new Error(
+      typeof payload.result === "string" ? payload.result : "ABI lookup failed",
+    );
   }
 
   const [contract] = payload.result;

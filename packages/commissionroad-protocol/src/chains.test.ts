@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   ETH_SENTINEL,
+  ETHERSCAN_V2_API_URL,
   PERMIT2_ADDRESS,
   SUPPORTED_CHAIN_IDS,
   chainConfigs,
@@ -21,9 +22,7 @@ describe("CommissionRoad protocol config", () => {
   });
 
   it("exports one ETH sentinel address", () => {
-    expect(ETH_SENTINEL).toBe(
-      "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
-    );
+    expect(ETH_SENTINEL).toBe("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE");
   });
 
   it("defines complete contract addresses for every supported Action Chain", () => {
@@ -38,9 +37,9 @@ describe("CommissionRoad protocol config", () => {
       expect(addresses.deployBlock).toBeGreaterThan(0n);
     }
 
-    expect(Object.keys(commissionRoadAddressesByChain).map(Number)).toEqual(
-      [...SUPPORTED_CHAIN_IDS],
-    );
+    expect(Object.keys(commissionRoadAddressesByChain).map(Number)).toEqual([
+      ...SUPPORTED_CHAIN_IDS,
+    ]);
   });
 
   it("defines explorer config for every supported Action Chain", () => {
@@ -48,7 +47,7 @@ describe("CommissionRoad protocol config", () => {
       const explorer = getExplorerConfig(chainId);
 
       expect(explorer.family).toBe("etherscan");
-      expect(explorer.apiUrl).toMatch(/^https:\/\//);
+      expect(explorer.apiUrl).toBe(ETHERSCAN_V2_API_URL);
       expect(explorer.browserUrl).toMatch(/^https:\/\//);
     }
 

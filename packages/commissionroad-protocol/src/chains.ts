@@ -4,6 +4,7 @@ export const ETH_SENTINEL =
   "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as const;
 
 export const SUPPORTED_CHAIN_IDS = [1, 8453, 11155111] as const;
+export const ETHERSCAN_V2_API_URL = "https://api.etherscan.io/v2/api";
 
 export type SupportedChainId = (typeof SUPPORTED_CHAIN_IDS)[number];
 
@@ -29,7 +30,7 @@ export const chainConfigs = {
     explorer: {
       family: "etherscan",
       name: "Etherscan",
-      apiUrl: "https://api.etherscan.io/api",
+      apiUrl: ETHERSCAN_V2_API_URL,
       browserUrl: "https://etherscan.io",
     },
   },
@@ -40,7 +41,7 @@ export const chainConfigs = {
     explorer: {
       family: "etherscan",
       name: "BaseScan",
-      apiUrl: "https://api.basescan.org/api",
+      apiUrl: ETHERSCAN_V2_API_URL,
       browserUrl: "https://basescan.org",
     },
   },
@@ -51,7 +52,7 @@ export const chainConfigs = {
     explorer: {
       family: "etherscan",
       name: "Sepolia Etherscan",
-      apiUrl: "https://api-sepolia.etherscan.io/api",
+      apiUrl: ETHERSCAN_V2_API_URL,
       browserUrl: "https://sepolia.etherscan.io",
     },
   },

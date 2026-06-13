@@ -13,6 +13,7 @@ export {
 } from "./addresses";
 export {
   ETH_SENTINEL,
+  ETHERSCAN_V2_API_URL,
   SUPPORTED_CHAIN_IDS,
   chainConfigs,
   getChainConfig,
