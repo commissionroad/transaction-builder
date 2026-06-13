@@ -29,10 +29,16 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
+    expect(view.getByRole("button", { name: /Sweep ERC20/i })).toBeTruthy();
+    expect(view.queryByText("Paste ABI manually")).toBeNull();
+
     await userEvent.type(
       view.getByLabelText("Contract address"),
       TOKEN_ADDRESS,
     );
+
+    expect(view.queryByRole("button", { name: /Sweep ERC20/i })).toBeNull();
+    expect(await view.findByText("Paste ABI manually")).toBeTruthy();
 
     await userEvent.click(
       await view.findByRole("button", { name: /Choose method/i }),
@@ -219,6 +225,49 @@ describe("ActionStepsEditor", () => {
       { kind: "actionVariable", name: "from" },
       { kind: "actionVariable", name: "to" },
     ]);
+  });
+
+  it("deletes Variables that are no longer used after an Action Step is removed", async () => {
+    let currentDraft = createTwoAddressParameterDraft();
+    const view = renderWithQueryClient(
+      <DraftHarness
+        draft={currentDraft}
+        onDraftChange={(draft) => {
+          currentDraft = draft;
+        }}
+      />,
+    );
+
+    const variableButtons = view.getAllByRole("button", {
+      name: "Variable",
+    });
+    await userEvent.click(variableButtons[0]);
+    await userEvent.click(variableButtons[1]);
+
+    await userEvent.click(view.getByRole("button", { name: /Delete move/i }));
+
+    expect(currentDraft.steps).toEqual([]);
+    expect(currentDraft.variables).toEqual([]);
+  });
+
+  it("resets percentage commission when deleting the Action Step that owns its Variable", async () => {
+    let currentDraft = createPercentageVariableDraft();
+    const view = renderWithQueryClient(
+      <DraftHarness
+        draft={currentDraft}
+        onDraftChange={(draft) => {
+          currentDraft = draft;
+        }}
+      />,
+    );
+
+    await userEvent.click(view.getByRole("button", { name: /Delete stake/i }));
+
+    expect(currentDraft.variables).toEqual([]);
+    expect(currentDraft.commissionFormula).toEqual({
+      kind: "flat",
+      amount: "0",
+    });
   });
 
   it("copies full contract addresses from Action Step headers", async () => {
@@ -461,6 +510,61 @@ function createTwoAddressParameterDraft(): ActionDefinitionV1 {
     ],
     commissionToken: { kind: "eth" },
     commissionFormula: { kind: "flat", amount: "0.01" },
+  };
+}
+
+function createPercentageVariableDraft(): ActionDefinitionV1 {
+  return {
+    schemaVersion: 1,
+    title: "Stake token",
+    description: "Test draft.",
+    chainId: 1,
+    commissionRoadNftId: "1",
+    contracts: [
+      {
+        id: "token",
+        chainId: 1,
+        address: TOKEN_ADDRESS,
+        labels: { verified: "MockToken" },
+        abi: [
+          {
+            type: "function",
+            name: "stake",
+            stateMutability: "nonpayable",
+            inputs: [{ name: "amount", type: "uint256" }],
+            outputs: [],
+          },
+        ],
+        abiSource: { kind: "manual" },
+      },
+    ],
+    variables: [
+      {
+        name: "stakeAmount",
+        label: "Stake Amount",
+        type: "uint256",
+      },
+    ],
+    steps: [
+      {
+        id: "stake",
+        kind: "write",
+        contractId: "token",
+        target: TOKEN_ADDRESS,
+        functionName: "stake",
+        functionSignature: "stake(uint256)",
+        stateMutability: "nonpayable",
+        inputs: [{ name: "amount", type: "uint256" }],
+        outputs: [],
+        parameters: [{ kind: "actionVariable", name: "stakeAmount" }],
+      },
+    ],
+    commissionToken: { kind: "eth" },
+    commissionFormula: {
+      kind: "percentage",
+      bps: 1,
+      variable: "stakeAmount",
+    },
   };
 }
 

@@ -84,10 +84,7 @@ export function ActionStepsEditor({
   };
 
   const deleteStep = (stepId: string) => {
-    onChange((current) => ({
-      ...current,
-      steps: current.steps.filter((step) => step.id !== stepId),
-    }));
+    onChange((current) => removeStepAndPruneVariables(current, stepId));
   };
 
   const addVariable = (variable: ActionVariable) => {
@@ -308,6 +305,41 @@ function StepEditor({
       </div>
     </div>
   );
+}
+
+function removeStepAndPruneVariables(
+  draft: BuilderDraft,
+  stepId: string,
+): BuilderDraft {
+  const steps = draft.steps.filter((step) => step.id !== stepId);
+  const referencedVariableNames = new Set<string>();
+
+  steps.forEach((step) => {
+    [...step.parameters, step.callValue]
+      .filter((binding): binding is ContractParameterBinding => !!binding)
+      .forEach((binding) => {
+        if (binding.kind === "actionVariable") {
+          referencedVariableNames.add(binding.name);
+        }
+      });
+  });
+
+  const variables = draft.variables.filter((variable) =>
+    referencedVariableNames.has(variable.name),
+  );
+  const variableNames = new Set(variables.map((variable) => variable.name));
+  const commissionFormula =
+    draft.commissionFormula.kind === "percentage" &&
+    !variableNames.has(draft.commissionFormula.variable)
+      ? { kind: "flat" as const, amount: "0" }
+      : draft.commissionFormula;
+
+  return {
+    ...draft,
+    commissionFormula,
+    steps,
+    variables,
+  };
 }
 
 function addCommissionRoadSweepStep(draft: BuilderDraft): BuilderDraft {

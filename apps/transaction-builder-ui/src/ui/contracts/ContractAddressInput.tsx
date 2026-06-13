@@ -183,13 +183,13 @@ export function ContractAddressInput({
               }}
             />
             {shouldShowInlineSuccess ? (
-              <CheckCircle2 className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-success" />
+              <CheckCircle2 className="pointer-events-none absolute right-3 top-1/2 size-5 -translate-y-1/2 text-secondary" />
             ) : null}
           </span>
         </label>
       </div>
 
-      {quickActions.length ? (
+      {quickActions.length && !addressText ? (
         <div className="mt-3 border-t border-base-300 pt-3">
           <div className="mb-2 text-xs font-medium uppercase tracking-wide text-base-content/50">
             Common steps
