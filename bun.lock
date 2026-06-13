@@ -106,6 +106,7 @@
       "name": "@transaction-builder/domain",
       "version": "0.0.0",
       "dependencies": {
+        "@transaction-builder/commissionroad-protocol": "workspace:*",
         "zod": "^4.1.13",
       },
       "devDependencies": {

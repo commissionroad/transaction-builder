@@ -12,6 +12,7 @@
     "format": "prettier --write 'src/**/*.{ts,tsx,json,md}'"
   },
   "dependencies": {
+    "@transaction-builder/commissionroad-protocol": "workspace:*",
     "zod": "^4.1.13"
   },
   "devDependencies": {

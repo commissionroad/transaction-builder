@@ -2,19 +2,20 @@ import { z } from "zod";
 
 export const SUPPORTED_ACTION_CHAIN_IDS = [1, 8453, 11155111] as const;
 
-export type SupportedActionChainId = (typeof SUPPORTED_ACTION_CHAIN_IDS)[number];
+export type SupportedActionChainId =
+  (typeof SUPPORTED_ACTION_CHAIN_IDS)[number];
 export type Address = `0x${string}`;
 
 const addressSchema = z
   .string()
-  .regex(/^0x[a-fA-F0-9]{40}$/, "Expected an EVM address") as z.ZodType<Address>;
+  .regex(
+    /^0x[a-fA-F0-9]{40}$/,
+    "Expected an EVM address",
+  ) as z.ZodType<Address>;
 
 const identifierSchema = z
   .string()
-  .regex(
-    /^[A-Za-z_][A-Za-z0-9_]*$/,
-    "Expected a JavaScript-safe identifier",
-  );
+  .regex(/^[A-Za-z_][A-Za-z0-9_]*$/, "Expected a JavaScript-safe identifier");
 
 const abiParameterSchema = z.object({
   name: z.string().optional(),
@@ -194,7 +195,9 @@ function getSemanticIssues(definition: ActionDefinitionV1): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const variableNames = new Set<string>();
   const duplicateVariableNames = new Set<string>();
-  const contractIds = new Set(definition.contracts.map((contract) => contract.id));
+  const contractIds = new Set(
+    definition.contracts.map((contract) => contract.id),
+  );
   const stepIndexes = new Map<string, number>();
   const usedStepOutputs = new Set<string>();
 
@@ -241,7 +244,10 @@ function getSemanticIssues(definition: ActionDefinitionV1): ValidationIssue[] {
     );
 
     bindings.forEach((binding, bindingIndex) => {
-      if (binding.kind === "actionVariable" && !variableNames.has(binding.name)) {
+      if (
+        binding.kind === "actionVariable" &&
+        !variableNames.has(binding.name)
+      ) {
         issues.push({
           path: `steps.${stepIndex}.bindings.${bindingIndex}`,
           message: `Unknown Action Variable "${binding.name}"`,

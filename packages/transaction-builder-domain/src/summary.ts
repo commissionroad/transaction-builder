@@ -1,4 +1,8 @@
-import type { ActionDefinitionV1, ActionStep, ContractSnapshot } from "./schema";
+import type {
+  ActionDefinitionV1,
+  ActionStep,
+  ContractSnapshot,
+} from "./schema";
 import { getActionShape } from "./compile";
 
 export interface GeneratedSummary {
@@ -65,7 +69,8 @@ function formatStep({
       return `${inputName}: ${formatBinding(binding)}`;
     })
     .join(", ");
-  const abiSource = contract?.abiSource.kind === "manual" ? " [Manual ABI]" : "";
+  const abiSource =
+    contract?.abiSource.kind === "manual" ? " [Manual ABI]" : "";
   const callValue = step.callValue
     ? ` with Call Value ${formatBinding(step.callValue)}`
     : "";
@@ -112,7 +117,9 @@ function formatBinding(binding: ActionStep["parameters"][number]): string {
 }
 
 function formatActionShape(actionShape: string): string {
-  return actionShape === "commissionPlan" ? "Commission Plan" : "Commission Call";
+  return actionShape === "commissionPlan"
+    ? "Commission Plan"
+    : "Commission Call";
 }
 
 function getChainLabel(chainId: number): string {

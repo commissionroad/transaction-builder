@@ -1,9 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { generateSummary } from "./summary";
-import {
-  createDependentAction,
-  createLidoSweepAction,
-} from "./schema.test";
+import { createDependentAction, createLidoSweepAction } from "./schema.test";
 
 describe("generateSummary", () => {
   it("summarizes a short Lido submit and sweep Action", () => {

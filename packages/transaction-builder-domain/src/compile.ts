@@ -28,8 +28,9 @@ export function getCallValueBindings(
   definition: ActionDefinitionV1,
 ): EthValueSource[] {
   return definition.steps
-    .filter((step): step is ActionStep & { callValue: ContractParameterBinding } =>
-      step.callValue !== undefined,
+    .filter(
+      (step): step is ActionStep & { callValue: ContractParameterBinding } =>
+        step.callValue !== undefined,
     )
     .map((step) => ({
       stepId: step.id,

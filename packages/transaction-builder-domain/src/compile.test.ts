@@ -4,10 +4,7 @@ import {
   getActionTargets,
   getCallValueBindings,
 } from "./compile";
-import {
-  createDependentAction,
-  createLidoSweepAction,
-} from "./schema.test";
+import { createDependentAction, createLidoSweepAction } from "./schema.test";
 
 describe("compile helpers", () => {
   it("compiles independent Actions as Commission Calls", () => {
@@ -21,9 +18,7 @@ describe("compile helpers", () => {
   it("includes sweep helper targets in Action targets", () => {
     const targets = getActionTargets(createLidoSweepAction());
 
-    expect(targets).toContain(
-      "0xc12dC152f12CaABF68F101Dbe496c4173828935E",
-    );
+    expect(targets).toContain("0xc12dC152f12CaABF68F101Dbe496c4173828935E");
   });
 
   it("includes Permit2 Funding targets in Action targets", () => {
