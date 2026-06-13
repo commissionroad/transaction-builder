@@ -1,0 +1,67 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  prefix: daisy-;
+  themes: commissionroad;
+  exclude: rootscrollgutter;
+}
+
+@plugin 'daisyui/theme' {
+  name: "light";
+  default: true;
+  --color-primary: #68d391;
+  --color-primary-content: #1a202c;
+  --color-secondary: #028562;
+  --color-secondary-content: #ffffff;
+  --color-accent: #49e7fd;
+  --color-neutral: #1a202c;
+  --color-base-100: #fefefe;
+  --color-base-200: #f4f7f5;
+  --color-base-300: #dce5df;
+  --color-info: #3b82f6;
+  --color-info-content: #fefefe;
+  --color-success: #d3f8e1;
+  --color-warning: #facc15;
+  --color-error: #bc1010;
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}
+
+@layer base {
+  :root {
+    font-family: "Ubuntu", sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html {
+    height: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    margin: 0;
+  }
+
+  [data-rk],
+  #root {
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+  }
+}

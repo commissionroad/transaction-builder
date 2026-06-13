@@ -4,13 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "echo \"transaction-builder-ui scaffold has no build yet\"",
-    "dev": "echo \"transaction-builder-ui scaffold has no dev server yet\"",
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite",
     "lint": "echo \"transaction-builder-ui scaffold has no lint yet\"",
-    "test": "echo \"transaction-builder-ui scaffold has no tests yet\"",
-    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md,yaml,yml}'"
+    "test": "bun test",
+    "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,md,yaml,yml}' package.json index.html vite.config.ts tsconfig.json postcss.config.cjs"
   },
   "dependencies": {
+    "@fontsource/ubuntu": "^5.2.8",
+    "@transaction-builder/commissionroad-protocol": "workspace:*",
+    "@transaction-builder/domain": "workspace:*",
     "@emotion/react": "^11.14.0",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@tanstack/react-query": "^5.90.12",
@@ -18,6 +21,7 @@
     "@wagmi/connectors": "^7.1.6",
     "classnames": "^2.5.1",
     "daisyui": "^5.5.8",
+    "lucide-react": "^0.555.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "sonner": "^2.0.7",
@@ -27,7 +31,9 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@happy-dom/global-registrator": "^20.6.1",
     "@tailwindcss/postcss": "^4.1.17",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@transaction-builder/eslint-config": "workspace:*",

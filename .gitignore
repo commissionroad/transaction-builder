@@ -9,6 +9,7 @@ dist-ssr
 .env
 .cache
 coverage
+.playwright-mcp
 
 # Local AI planning state - not shared
 .planning

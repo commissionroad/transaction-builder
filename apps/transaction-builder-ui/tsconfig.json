@@ -1,0 +1,14 @@
+{
+  "extends": "@transaction-builder/typescript-config/base.json",
+  "compilerOptions": {
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "./",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": ["bun", "vite/client"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+}
