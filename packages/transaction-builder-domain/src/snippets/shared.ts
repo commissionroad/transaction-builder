@@ -85,15 +85,22 @@ function formatBatchCall(step: ActionStep): string {
     callData: encodeFunctionData({
       abi: ${toSafePropertyName(step.contractId)}Abi,
       functionName: ${JSON.stringify(step.functionName)},
-      args: [${step.parameters.map(formatBinding).join(", ")}],
+      args: [${step.parameters
+        .map((binding, index) =>
+          formatBinding(binding, step.inputs[index]?.type),
+        )
+        .join(", ")}],
     }),
-    value: ${step.callValue ? formatBinding(step.callValue) : "0n"},
+    value: ${step.callValue ? formatBinding(step.callValue, "uint256") : "0n"},
   }`;
 }
 
-function formatBinding(binding: ContractParameterBinding): string {
+function formatBinding(
+  binding: ContractParameterBinding,
+  abiType?: string,
+): string {
   if (binding.kind === "fixed") {
-    return formatFixedValue(binding.value);
+    return formatFixedValue(binding.value, abiType);
   }
 
   if (binding.kind === "actionVariable") {
@@ -103,13 +110,17 @@ function formatBinding(binding: ContractParameterBinding): string {
   return `/* Step Output ${binding.stepId}[${binding.outputIndex}] is available in commissionPlan snippets */`;
 }
 
-function formatFixedValue(value: unknown): string {
+function formatFixedValue(value: unknown, abiType?: string): string {
   if (typeof value === "bigint") {
     return `${value.toString()}n`;
   }
 
-  if (typeof value === "number" && Number.isInteger(value)) {
-    return `${value}n`;
+  if (isIntegerType(abiType)) {
+    return `${String(value || "0")}n`;
+  }
+
+  if (abiType === "bool") {
+    return value === true || value === "true" ? "true" : "false";
   }
 
   return JSON.stringify(value);
@@ -129,13 +140,17 @@ function formatTotalValueExpression(definition: ActionDefinitionV1): string {
   const valueParts = definition.steps
     .map((step) => step.callValue)
     .filter((binding): binding is ContractParameterBinding => !!binding)
-    .map(formatBinding);
+    .map((binding) => formatBinding(binding, "uint256"));
 
   if (definition.commissionToken.kind === "eth") {
     valueParts.push("commission");
   }
 
   return valueParts.length ? valueParts.join(" + ") : "0n";
+}
+
+function isIntegerType(abiType: string | undefined): boolean {
+  return !!abiType && (abiType.startsWith("uint") || abiType.startsWith("int"));
 }
 
 function getTypeScriptType(variable: ActionVariable): string {

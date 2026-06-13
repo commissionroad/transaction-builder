@@ -3,8 +3,12 @@ import {
   getChainConfig,
 } from "@transaction-builder/commissionroad-protocol";
 import { validateDraft } from "@transaction-builder/domain";
-import { Plus, Share2 } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { ActionStepsEditor } from "./ActionStepsEditor";
+import { ActionVariableEditor } from "./ActionVariableEditor";
+import { CommissionEditor } from "./CommissionEditor";
+import { SnippetPanel } from "./SnippetPanel";
 import {
   createInitialBuilderDraft,
   getDraftStepCount,
@@ -121,53 +125,18 @@ export function BuilderView() {
                   Add Contract calls in the order users will execute them.
                 </p>
               </div>
-              <button className="daisy-btn daisy-btn-secondary" type="button">
-                <Plus className="size-4" />
-                Add Contract
-              </button>
             </div>
 
-            <div className="rounded-lg border border-dashed border-base-300 bg-base-200 px-4 py-10 text-center">
-              <p className="font-medium">No Action Steps yet</p>
-              <p className="mt-1 text-sm text-base-content/70">
-                Start by adding a contract, resolving its ABI, and choosing a
-                method.
-              </p>
-            </div>
+            <ActionStepsEditor draft={draft} onChange={setDraft} />
           </div>
         </section>
+
+        <SnippetPanel draft={draft} />
       </section>
 
       <aside className="flex flex-col gap-4">
-        <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
-          <div className="daisy-card-body gap-4">
-            <h2 className="text-lg font-semibold">Commission</h2>
-            <label className="daisy-form-control">
-              <span className="daisy-label pb-2">
-                <span className="daisy-label-text font-medium">
-                  CommissionRoad NFT
-                </span>
-              </span>
-              <select
-                aria-label="CommissionRoad NFT"
-                className="daisy-select daisy-select-bordered w-full"
-                value={draft.commissionRoadNftId ?? ""}
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    commissionRoadNftId: event.target.value || undefined,
-                  }))
-                }
-              >
-                <option value="">Connect wallet to select</option>
-              </select>
-            </label>
-            <div className="rounded-lg bg-base-200 p-3 text-sm text-base-content/70">
-              ETH commissions are available now. ERC20 commissions will be
-              enabled in the Permit2 funding slice.
-            </div>
-          </div>
-        </section>
+        <CommissionEditor draft={draft} onChange={setDraft} />
+        <ActionVariableEditor draft={draft} onChange={setDraft} />
 
         <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
           <div className="daisy-card-body gap-4">
@@ -184,6 +153,11 @@ export function BuilderView() {
               <Share2 className="size-4" />
               Share Action
             </button>
+            {!validation.success ? (
+              <div className="rounded-lg bg-base-200 p-3 text-xs text-base-content/70">
+                {validation.issues[0]?.message}
+              </div>
+            ) : null}
           </div>
         </section>
       </aside>
