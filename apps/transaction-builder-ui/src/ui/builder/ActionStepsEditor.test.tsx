@@ -217,6 +217,7 @@ describe("ActionStepsEditor", () => {
     await userEvent.click(variableButtons[0]);
     await userEvent.click(variableButtons[1]);
 
+    expect(view.queryByRole("button", { name: "New" })).toBeNull();
     expect(currentDraft.variables.map((variable) => variable.name)).toEqual([
       "from",
       "to",

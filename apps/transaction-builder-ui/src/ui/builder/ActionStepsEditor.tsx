@@ -544,7 +544,7 @@ function BindingEditor({
         </div>
 
         {currentBinding.kind === "actionVariable" ? (
-          <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="mt-2">
             <select
               className="daisy-select daisy-select-bordered w-full"
               value={currentBinding.name}
@@ -558,17 +558,6 @@ function BindingEditor({
                 </option>
               ))}
             </select>
-            <button
-              className="daisy-btn daisy-btn-outline"
-              onClick={() => {
-                const variable = createVariable(toLabel(label));
-                onChange({ kind: "actionVariable", name: variable.name });
-              }}
-              type="button"
-            >
-              <Plus className="size-4" />
-              New
-            </button>
           </div>
         ) : currentBinding.kind === "stepOutput" ? (
           stepOutputs.length ? (
