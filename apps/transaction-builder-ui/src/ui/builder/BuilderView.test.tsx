@@ -8,6 +8,7 @@ import {
   createRouter,
 } from "@tanstack/react-router";
 import { act, cleanup, render } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "bun:test";
 import { WagmiProvider } from "wagmi";
 import { wagmiConfig } from "src/network/wagmi";
@@ -43,18 +44,32 @@ describe("BuilderView", () => {
       );
     });
 
-    expect(view?.getByAltText("CommissionRoad")).toBeTruthy();
-    expect(
-      view?.getAllByRole("link", { name: "Build" }).length,
-    ).toBeGreaterThan(0);
-    expect(view?.getByLabelText("Action Chain")).toBeTruthy();
-    expect(view?.getByLabelText("Action name")).toBeTruthy();
-    expect(view?.getByLabelText("Description")).toBeTruthy();
-    expect(view?.getByText("Add Action Step")).toBeTruthy();
-    expect(view?.getByLabelText("Contract address")).toBeTruthy();
+    if (!view) {
+      throw new Error("BuilderView did not render");
+    }
+
+    expect(view.getByAltText("CommissionRoad")).toBeTruthy();
+    expect(view.getAllByRole("link", { name: "Build" }).length).toBeGreaterThan(
+      0,
+    );
+    expect(view.getByLabelText("Action Chain")).toBeTruthy();
+    expect(view.getByLabelText("Action name")).toBeTruthy();
+    expect(view.getByLabelText("Description")).toBeTruthy();
+    expect(view.getByText("Call Tree")).toBeTruthy();
+    expect(view.getByText("Contract calls will appear here.")).toBeTruthy();
+    expect(view.queryByLabelText("Contract address")).toBeNull();
+
+    await userEvent.click(view.getByRole("button", { name: /Flow/i }));
+
+    expect(view.getByText("Add Action Step")).toBeTruthy();
+    expect(view.getByLabelText("Contract address")).toBeTruthy();
+
+    await userEvent.click(view.getByRole("button", { name: /Review/i }));
+
+    expect(view.getByText("Code Snippets")).toBeTruthy();
     expect(
       (
-        view?.getByRole("button", {
+        view.getByRole("button", {
           name: /Share Action/i,
         }) as HTMLButtonElement
       ).disabled,
