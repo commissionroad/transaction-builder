@@ -4,8 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "tsc --noEmit && bun build src/index.ts --outdir dist --target bun",
     "dev": "bun run --watch src/index.ts",
+    "start": "bun run dist/index.js",
     "lint": "echo \"transaction-builder-api lint not configured yet\"",
     "test": "bun test",
     "format": "prettier --write '**/*.{js,ts,json,md,yaml,yml}'"
