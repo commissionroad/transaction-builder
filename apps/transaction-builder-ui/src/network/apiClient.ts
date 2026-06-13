@@ -1,6 +1,7 @@
 import type { ActionDefinitionV1 } from "@transaction-builder/domain";
 
-const DEFAULT_API_BASE_URL = "http://localhost:3001";
+const DEFAULT_TRANSACTION_BUILDER_API_BASE_URL = "http://localhost:3001";
+const DEFAULT_COMMISSIONROAD_API_BASE_URL = "https://api.commissionroad.xyz";
 
 export interface PublishedActionResponse {
   slug: string;
@@ -10,6 +11,20 @@ export interface PublishedActionResponse {
   schemaVersion: number;
   definition: ActionDefinitionV1;
   createdAt: string;
+}
+
+export interface CommissionRoadPortfolioNft {
+  id: number;
+  chainId: number;
+  name: string;
+  claimableBalances: Array<{
+    address: string;
+    symbol: string;
+    decimals: number;
+    amount: string;
+    fiatValue: string | null;
+  }>;
+  claimableBalanceFiat?: string;
 }
 
 export class ApiClientError extends Error {
@@ -53,6 +68,18 @@ export async function getPublishedAction(
   return readActionResponse(response);
 }
 
+export async function getCommissionRoadPortfolioNfts(
+  walletAddress: string,
+  options: { signal?: AbortSignal } = {},
+): Promise<CommissionRoadPortfolioNft[]> {
+  const response = await fetch(
+    `${getCommissionRoadApiBaseUrl()}/portfolio/${encodeURIComponent(walletAddress)}/nfts`,
+    { signal: options.signal },
+  );
+
+  return readJsonResponse<CommissionRoadPortfolioNft[]>(response);
+}
+
 async function readActionResponse(
   response: Response,
 ): Promise<PublishedActionResponse> {
@@ -64,7 +91,15 @@ async function readActionResponse(
     throw new ApiClientError(await getErrorMessage(response), response.status);
   }
 
-  return (await response.json()) as PublishedActionResponse;
+  return readJsonResponse<PublishedActionResponse>(response);
+}
+
+async function readJsonResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    throw new ApiClientError(await getErrorMessage(response), response.status);
+  }
+
+  return (await response.json()) as T;
 }
 
 async function getErrorMessage(response: Response): Promise<string> {
@@ -77,8 +112,19 @@ async function getErrorMessage(response: Response): Promise<string> {
 }
 
 function getApiBaseUrl(): string {
-  return (
-    import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-    DEFAULT_API_BASE_URL
+  return getBaseUrl(
+    import.meta.env.VITE_API_BASE_URL,
+    DEFAULT_TRANSACTION_BUILDER_API_BASE_URL,
   );
+}
+
+function getCommissionRoadApiBaseUrl(): string {
+  return getBaseUrl(
+    import.meta.env.VITE_COMMISSIONROAD_API_BASE_URL,
+    DEFAULT_COMMISSIONROAD_API_BASE_URL,
+  );
+}
+
+function getBaseUrl(value: string | undefined, fallback: string): string {
+  return value?.trim().replace(/\/$/, "") || fallback;
 }
