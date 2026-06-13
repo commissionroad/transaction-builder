@@ -1,11 +1,14 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import classNames from "classnames";
-import { ExternalLink, Menu } from "lucide-react";
 import { ConnectButton } from "../account/ConnectButton/ConnectButton";
+
+const COMMISSIONROAD_URL = "https://commissionroad.xyz";
+const DOCS_URL = "https://docs.commissionroad.xyz";
 
 export function Header() {
   const location = useLocation();
-  const isBuildActive = location.pathname === "/";
+  const currentPath = location.pathname;
+  const isBuildActive = currentPath === "/";
 
   return (
     <header className="border-b border-base-300 bg-base-100">
@@ -18,12 +21,41 @@ export function Header() {
               type="button"
               aria-label="Open navigation"
             >
-              <Menu className="size-5" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M4 6h16M4 12h8m-8 6h16"
+                />
+              </svg>
             </button>
             <ul
               tabIndex={0}
               className="daisy-menu daisy-menu-lg daisy-dropdown-content z-10 mt-3 w-60 rounded-box bg-base-100 p-2 shadow-sm"
             >
+              <li>
+                <a
+                  href={`${COMMISSIONROAD_URL}/mint`}
+                  className="inline-block w-16 text-center"
+                >
+                  Mint
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`${COMMISSIONROAD_URL}/portfolio`}
+                  className="inline-block w-28 text-center"
+                >
+                  Portfolio
+                </a>
+              </li>
               <li>
                 <Link
                   to="/"
@@ -38,28 +70,54 @@ export function Header() {
               </li>
               <li>
                 <a
-                  href="https://docs.commissionroad.xyz"
+                  href={`${COMMISSIONROAD_URL}/demo`}
+                  className="inline-block w-24 text-center"
+                >
+                  Example
+                </a>
+              </li>
+              <li>
+                <a
+                  href={DOCS_URL}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2"
                 >
                   Docs
-                  <ExternalLink className="size-4" />
                 </a>
               </li>
             </ul>
           </div>
-          <Link className="daisy-btn daisy-btn-ghost text-xl" to="/">
+          <a
+            className="daisy-btn daisy-btn-ghost text-xl"
+            href={COMMISSIONROAD_URL}
+          >
             <img
               src="/commissionRoadLogo.svg"
               className="inline h-7"
               alt="CommissionRoad"
             />
             <span className="hidden sm:inline">CommissionRoad</span>
-          </Link>
+          </a>
         </div>
         <nav className="daisy-navbar-center hidden lg:flex">
           <ul className="daisy-menu daisy-menu-horizontal daisy-menu-lg px-1">
+            <li>
+              <a
+                href={`${COMMISSIONROAD_URL}/mint`}
+                className="inline-block w-18 text-center"
+              >
+                Mint
+              </a>
+            </li>
+            <li>
+              <a
+                href={`${COMMISSIONROAD_URL}/portfolio`}
+                className="inline-block w-28 text-center"
+              >
+                Portfolio
+              </a>
+            </li>
             <li>
               <Link
                 to="/"
@@ -73,13 +131,20 @@ export function Header() {
             </li>
             <li>
               <a
-                href="https://docs.commissionroad.xyz"
+                href={`${COMMISSIONROAD_URL}/demo`}
+                className="inline-block w-24 text-center"
+              >
+                Example
+              </a>
+            </li>
+            <li>
+              <a
+                href={DOCS_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2"
               >
                 Docs
-                <ExternalLink className="size-4" />
               </a>
             </li>
           </ul>

@@ -10,7 +10,7 @@ import { Header } from "./ui/navigation/Header";
 
 const rootRoute = createRootRoute({
   component: () => (
-    <div className="min-h-screen bg-base-100 text-neutral">
+    <div className="min-h-screen bg-base-200 text-neutral">
       <Header />
       <Outlet />
     </div>
