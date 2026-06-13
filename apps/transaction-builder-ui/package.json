@@ -11,10 +11,10 @@
     "format": "prettier --write 'src/**/*.{js,jsx,ts,tsx,json,md,yaml,yml}' package.json index.html vite.config.ts tsconfig.json postcss.config.cjs"
   },
   "dependencies": {
+    "@coinbase/wallet-sdk": "^4.3.6",
     "@cowprotocol/sdk-common": "0.11.2",
     "@cowprotocol/sdk-viem-adapter": "^0.3.0",
     "@cowprotocol/sdk-weiroll": "^0.1.12",
-    "@coinbase/wallet-sdk": "^4.3.6",
     "@emotion/react": "^11.14.0",
     "@fontsource/ubuntu": "^5.2.8",
     "@metamask/sdk": "^0.34.0",
@@ -30,6 +30,7 @@
     "lucide-react": "^0.555.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-syntax-highlighter": "^16.1.0",
     "sonner": "^2.0.7",
     "tailwindcss": "^4.1.17",
     "viem": "2.45.1",
@@ -47,6 +48,7 @@
     "@transaction-builder/typescript-config": "workspace:*",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@vitejs/plugin-react": "^5.1.1",
     "happy-dom": "^20.6.1",
     "prettier": "^3.7.4",
