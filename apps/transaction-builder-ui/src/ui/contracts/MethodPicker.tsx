@@ -48,16 +48,17 @@ export function MethodPicker({
           <div className="mt-2 grid gap-2 md:grid-cols-2">
             {readFunctions.map((fragment) => (
               <button
-                className="rounded-lg border border-base-300 bg-base-100 p-3 text-left opacity-60"
-                disabled
+                className="rounded-lg border border-base-300 bg-base-100 p-3 text-left transition hover:border-secondary hover:bg-base-200"
                 key={getFunctionSignature(fragment)}
+                onClick={() => onAddStep(fragment)}
                 type="button"
               >
                 <div className="font-mono text-sm font-semibold">
                   {fragment.name}()
                 </div>
                 <div className="mt-1 text-xs text-base-content/70">
-                  Read Steps unlock in the Commission Plan slice.
+                  Read Step · {fragment.outputs.length} Step Output
+                  {fragment.outputs.length === 1 ? "" : "s"}
                 </div>
               </button>
             ))}

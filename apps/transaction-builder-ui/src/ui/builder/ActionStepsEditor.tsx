@@ -17,6 +17,14 @@ import {
 import { ContractAddressInput } from "../contracts/ContractAddressInput";
 import { MethodPicker } from "../contracts/MethodPicker";
 
+interface AvailableStepOutput {
+  stepId: string;
+  stepLabel: string;
+  outputIndex: number;
+  name: string;
+  type: string;
+}
+
 export function ActionStepsEditor({
   draft,
   onChange,
@@ -168,6 +176,25 @@ function StepEditor({
         </button>
       </div>
 
+      {step.outputs.length ? (
+        <div className="mt-4 rounded-lg bg-base-200 p-3">
+          <div className="text-xs font-medium uppercase tracking-wide text-base-content/50">
+            Step Outputs
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {step.outputs.map((output, outputIndex) => (
+              <span
+                className="rounded-md border border-base-300 bg-base-100 px-2 py-1 font-mono text-xs"
+                key={`${step.id}-output-${outputIndex}`}
+              >
+                {output.name || `output ${outputIndex + 1}`}{" "}
+                <span className="text-base-content/50">{output.type}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-4 grid gap-3">
         {step.inputs.map((input, parameterIndex) => (
           <BindingEditor
@@ -190,6 +217,7 @@ function StepEditor({
                 updateParameterBinding({ step, parameterIndex, binding }),
               )
             }
+            stepOutputs={getAvailableStepOutputs(draft, index, input.type)}
             type={input.type}
             variables={draft.variables.filter(
               (variable) => variable.type === input.type,
@@ -213,6 +241,7 @@ function StepEditor({
             }
             label="Call Value"
             onChange={(binding) => onUpdate({ ...step, callValue: binding })}
+            stepOutputs={getAvailableStepOutputs(draft, index, "uint256")}
             type="uint256"
             variables={draft.variables.filter(
               (variable) => variable.type === "uint256",
@@ -229,6 +258,7 @@ function BindingEditor({
   createVariable,
   label,
   onChange,
+  stepOutputs,
   type,
   variables,
 }: {
@@ -236,41 +266,79 @@ function BindingEditor({
   createVariable: (label: string) => ActionVariable;
   label: string;
   onChange: (binding: ContractParameterBinding) => void;
+  stepOutputs: AvailableStepOutput[];
   type: string;
   variables: ActionVariable[];
 }) {
   const currentBinding = binding ?? { kind: "fixed", value: "" };
-  const isDynamic = currentBinding.kind === "actionVariable";
 
-  const handleDynamicToggle = (checked: boolean) => {
-    if (!checked) {
+  const handleModeChange = (mode: ContractParameterBinding["kind"]): void => {
+    if (mode === "fixed") {
       onChange({ kind: "fixed", value: "" });
       return;
     }
 
-    const variable = createVariable(toLabel(label));
-    onChange({ kind: "actionVariable", name: variable.name });
+    if (mode === "actionVariable") {
+      const existingVariable = variables[0];
+      const variable = existingVariable ?? createVariable(toLabel(label));
+      onChange({ kind: "actionVariable", name: variable.name });
+      return;
+    }
+
+    const output = stepOutputs[0];
+    if (!output) {
+      return;
+    }
+
+    onChange({
+      kind: "stepOutput",
+      stepId: output.stepId,
+      outputIndex: output.outputIndex,
+    });
   };
 
   return (
-    <div className="grid gap-2 rounded-lg bg-base-200 p-3 md:grid-cols-[minmax(0,1fr)_160px]">
+    <div className="grid gap-3 rounded-lg bg-base-200 p-3">
       <div>
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="text-sm font-medium">
             {label} <span className="font-mono text-xs opacity-60">{type}</span>
           </label>
-          <label className="flex items-center gap-2 text-xs">
-            <input
-              checked={isDynamic}
-              className="daisy-checkbox daisy-checkbox-sm"
-              onChange={(event) => handleDynamicToggle(event.target.checked)}
-              type="checkbox"
-            />
-            Action Variable
-          </label>
+          <div className="daisy-join">
+            <button
+              className={`daisy-btn daisy-join-item daisy-btn-xs ${
+                currentBinding.kind === "fixed" ? "daisy-btn-active" : ""
+              }`}
+              onClick={() => handleModeChange("fixed")}
+              type="button"
+            >
+              Fixed
+            </button>
+            <button
+              className={`daisy-btn daisy-join-item daisy-btn-xs ${
+                currentBinding.kind === "actionVariable"
+                  ? "daisy-btn-active"
+                  : ""
+              }`}
+              onClick={() => handleModeChange("actionVariable")}
+              type="button"
+            >
+              Action Variable
+            </button>
+            <button
+              className={`daisy-btn daisy-join-item daisy-btn-xs ${
+                currentBinding.kind === "stepOutput" ? "daisy-btn-active" : ""
+              }`}
+              disabled={!stepOutputs.length}
+              onClick={() => handleModeChange("stepOutput")}
+              type="button"
+            >
+              Step Output
+            </button>
+          </div>
         </div>
 
-        {isDynamic ? (
+        {currentBinding.kind === "actionVariable" ? (
           <select
             className="daisy-select daisy-select-bordered mt-2 w-full"
             value={currentBinding.name}
@@ -281,6 +349,28 @@ function BindingEditor({
             {variables.map((variable) => (
               <option key={variable.name} value={variable.name}>
                 {variable.label} ({variable.name})
+              </option>
+            ))}
+          </select>
+        ) : currentBinding.kind === "stepOutput" ? (
+          <select
+            className="daisy-select daisy-select-bordered mt-2 w-full"
+            value={`${currentBinding.stepId}:${currentBinding.outputIndex}`}
+            onChange={(event) => {
+              const [stepId, outputIndex] = event.target.value.split(":");
+              onChange({
+                kind: "stepOutput",
+                stepId,
+                outputIndex: Number(outputIndex),
+              });
+            }}
+          >
+            {stepOutputs.map((output) => (
+              <option
+                key={`${output.stepId}-${output.outputIndex}`}
+                value={`${output.stepId}:${output.outputIndex}`}
+              >
+                {output.stepLabel} · {output.name} ({output.type})
               </option>
             ))}
           </select>
@@ -298,6 +388,29 @@ function BindingEditor({
       </div>
     </div>
   );
+}
+
+function getAvailableStepOutputs(
+  draft: ActionDefinitionV1,
+  currentStepIndex: number,
+  type: string,
+): AvailableStepOutput[] {
+  return draft.steps
+    .slice(0, currentStepIndex)
+    .flatMap((candidate, stepIndex) =>
+      candidate.outputs.map((output, outputIndex) => ({
+        stepId: candidate.id,
+        stepLabel:
+          candidate.label ||
+          candidate.functionSignature ||
+          candidate.functionName ||
+          `Step ${stepIndex + 1}`,
+        outputIndex,
+        name: output.name || `output ${outputIndex + 1}`,
+        type: output.type,
+      })),
+    )
+    .filter((output) => output.type === type);
 }
 
 function toLabel(value: string): string {
