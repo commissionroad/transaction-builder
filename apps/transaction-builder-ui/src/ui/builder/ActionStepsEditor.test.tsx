@@ -8,8 +8,11 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import { renderWithQueryClient } from "src/testing/render";
 import { ActionStepsEditor } from "./ActionStepsEditor";
 
+const originalFetch = globalThis.fetch;
+
 describe("ActionStepsEditor", () => {
   afterEach(() => {
+    globalThis.fetch = originalFetch;
     cleanup();
     document.body.innerHTML = "";
   });
@@ -25,14 +28,125 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
-    await userEvent.click(view.getByText("Read methods"));
-    await userEvent.click(view.getByRole("button", { name: /balanceOf/i }));
+    await userEvent.click(view.getByRole("button", { name: "Add Step" }));
+    await userEvent.type(
+      view.getByLabelText("Contract address"),
+      TOKEN_ADDRESS,
+    );
+
+    expect(
+      await view.findByText(/Using the ABI already in this Action/i),
+    ).toBeTruthy();
+
+    await userEvent.click(view.getByRole("button", { name: /Choose Method/i }));
+    await userEvent.click(
+      view.getByRole("button", { name: /balanceOf\(address\)/i }),
+    );
 
     expect(view.getByText("Flow")).toBeTruthy();
     expect(view.getByText("balanceOf(address)")).toBeTruthy();
     expect(view.getByText("Step Outputs")).toBeTruthy();
     expect(view.getByText("balance")).toBeTruthy();
     expect(currentDraft.steps[0]?.kind).toBe("read");
+  });
+
+  it("automatically resolves an ABI after a valid contract address is entered", async () => {
+    const fetchUrls: string[] = [];
+    globalThis.fetch = (async (input) => {
+      fetchUrls.push(String(input));
+      return new Response(
+        JSON.stringify({
+          status: "1",
+          message: "OK",
+          result: [
+            {
+              SourceCode: "",
+              ABI: JSON.stringify(TOKEN_ABI),
+              Proxy: "0",
+              Implementation: "",
+              ContractName: "MockToken",
+            },
+          ],
+        }),
+      );
+    }) as typeof fetch;
+    let currentDraft = createEmptyDraft();
+    const view = renderWithQueryClient(
+      <DraftHarness
+        draft={currentDraft}
+        onDraftChange={(draft) => {
+          currentDraft = draft;
+        }}
+      />,
+    );
+
+    await userEvent.click(view.getByRole("button", { name: "Add Step" }));
+    await userEvent.type(
+      view.getByLabelText("Contract address"),
+      TOKEN_ADDRESS,
+    );
+
+    expect(await view.findByText(/ABI ready for MockToken/i)).toBeTruthy();
+    expect(fetchUrls).toHaveLength(1);
+    expect(new URL(fetchUrls[0]).searchParams.get("action")).toBe(
+      "getsourcecode",
+    );
+
+    await userEvent.click(view.getByRole("button", { name: /Choose Method/i }));
+    await userEvent.click(
+      view.getByRole("button", { name: /transfer\(address,uint256\)/i }),
+    );
+
+    expect(currentDraft.contracts[0]?.labels.verified).toBe("MockToken");
+    expect(currentDraft.steps[0]?.functionSignature).toBe(
+      "transfer(address,uint256)",
+    );
+  });
+
+  it("discloses manual ABI entry when automatic lookup fails", async () => {
+    globalThis.fetch = (async (_input) =>
+      new Response(
+        JSON.stringify({
+          status: "0",
+          message: "NOTOK",
+          result: "Verified ABI not found",
+        }),
+      )) as typeof fetch;
+    let currentDraft = createEmptyDraft();
+    const view = renderWithQueryClient(
+      <DraftHarness
+        draft={currentDraft}
+        onDraftChange={(draft) => {
+          currentDraft = draft;
+        }}
+      />,
+    );
+
+    await userEvent.click(view.getByRole("button", { name: "Add Step" }));
+    await userEvent.type(
+      view.getByLabelText("Contract address"),
+      TOKEN_ADDRESS,
+    );
+
+    expect(await view.findByText(/Verified ABI not found/i)).toBeTruthy();
+
+    await userEvent.type(
+      view.getByLabelText("Manual ABI"),
+      escapeUserEventText(JSON.stringify(TOKEN_ABI)),
+    );
+    await userEvent.click(view.getByRole("button", { name: "Use Manual ABI" }));
+
+    expect(await view.findByText(/Manual ABI ready/i)).toBeTruthy();
+
+    await userEvent.click(view.getByRole("button", { name: /Choose Method/i }));
+    await userEvent.click(
+      view.getByRole("button", { name: /transfer\(address,uint256\)/i }),
+    );
+
+    expect(currentDraft.contracts[0]?.abiSource).toEqual({ kind: "manual" });
+    expect(currentDraft.steps[0]?.functionSignature).toBe(
+      "transfer(address,uint256)",
+    );
   });
 
   it("lets later Contract Parameters bind to earlier matching Step Outputs", async () => {
@@ -130,6 +244,21 @@ function DraftHarness({
   return <ActionStepsEditor draft={draft} onChange={handleChange} />;
 }
 
+function createEmptyDraft(): ActionDefinitionV1 {
+  return {
+    schemaVersion: 1,
+    title: "Transfer token balance",
+    description: "Read a token balance and transfer that amount.",
+    chainId: 1,
+    commissionRoadNftId: "1",
+    contracts: [],
+    variables: [],
+    steps: [],
+    commissionToken: { kind: "eth" },
+    commissionFormula: { kind: "flat", amount: "0.01" },
+  };
+}
+
 function createStepOutputDraft({
   includeSteps = true,
   readFirst = true,
@@ -191,25 +320,7 @@ function createStepOutputDraft({
         chainId: 1,
         address: TOKEN_ADDRESS,
         labels: { verified: "MockToken" },
-        abi: [
-          {
-            type: "function",
-            name: "balanceOf",
-            stateMutability: "view",
-            inputs: [{ name: "account", type: "address" }],
-            outputs: [{ name: "balance", type: "uint256" }],
-          },
-          {
-            type: "function",
-            name: "transfer",
-            stateMutability: "nonpayable",
-            inputs: [
-              { name: "to", type: "address" },
-              { name: "amount", type: "uint256" },
-            ],
-            outputs: [{ name: "ok", type: "bool" }],
-          },
-        ],
+        abi: TOKEN_ABI,
         abiSource: { kind: "manual" },
       },
     ],
@@ -296,3 +407,26 @@ function createTwoAddressParameterDraft(): ActionDefinitionV1 {
 }
 
 const TOKEN_ADDRESS = "0x2222222222222222222222222222222222222222" as Address;
+const TOKEN_ABI = [
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ name: "balance", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "ok", type: "bool" }],
+  },
+];
+
+function escapeUserEventText(value: string): string {
+  return value.replace(/[{[]/g, (character) => `${character}${character}`);
+}

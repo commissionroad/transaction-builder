@@ -6,16 +6,16 @@ import type {
   ContractSnapshot,
 } from "@transaction-builder/domain";
 import { Plus, Trash2 } from "lucide-react";
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import type { AbiFunctionFragment, BuilderDraft } from "./builderState";
 import {
   createActionVariable,
+  createContractId,
   createStepFromFunction,
   getFunctionSignature,
   updateParameterBinding,
 } from "./builderState";
 import { ContractAddressInput } from "../contracts/ContractAddressInput";
-import { MethodPicker } from "../contracts/MethodPicker";
 
 interface AvailableStepOutput {
   stepId: string;
@@ -32,26 +32,39 @@ export function ActionStepsEditor({
   draft: BuilderDraft;
   onChange: Dispatch<SetStateAction<BuilderDraft>>;
 }) {
-  const addContract = (contract: ContractSnapshot) => {
-    onChange((current) => ({
-      ...current,
-      contracts: [...current.contracts, contract],
-    }));
-  };
+  const [isAddingStep, setIsAddingStep] = useState(false);
 
   const addStep = (
     contract: ContractSnapshot,
     functionFragment: AbiFunctionFragment,
   ) => {
-    const step = createStepFromFunction({
-      contract,
-      functionFragment,
-      stepIndex: draft.steps.length,
+    onChange((current) => {
+      const existingContract = current.contracts.find(
+        (candidate) =>
+          candidate.chainId === contract.chainId &&
+          candidate.address.toLowerCase() === contract.address.toLowerCase(),
+      );
+      const stepContract =
+        existingContract ??
+        ({
+          ...contract,
+          id: createContractId(current.contracts),
+        } satisfies ContractSnapshot);
+      const step = createStepFromFunction({
+        contract: stepContract,
+        functionFragment,
+        stepIndex: current.steps.length,
+      });
+
+      return {
+        ...current,
+        contracts: existingContract
+          ? current.contracts
+          : [...current.contracts, stepContract],
+        steps: [...current.steps, step],
+      };
     });
-    onChange((current) => ({
-      ...current,
-      steps: [...current.steps, step],
-    }));
+    setIsAddingStep(false);
   };
 
   const updateStep = (updatedStep: ActionStep) => {
@@ -80,43 +93,23 @@ export function ActionStepsEditor({
 
   return (
     <div className="flex flex-col gap-5">
-      <ContractAddressInput
-        chainId={draft.chainId}
-        existingContracts={draft.contracts}
-        onContractResolved={addContract}
-      />
-
-      {draft.contracts.length ? (
-        <div className="flex flex-col gap-4">
-          {draft.contracts.map((contract) => (
-            <section
-              className="rounded-lg border border-base-300 bg-base-200 p-4"
-              key={contract.id}
-            >
-              <div className="mb-3">
-                <h3 className="font-semibold">
-                  {contract.labels.verified ??
-                    contract.labels.creator ??
-                    contract.address}
-                </h3>
-                <p className="break-all font-mono text-xs text-base-content/60">
-                  {contract.address}
-                </p>
-              </div>
-              <MethodPicker
-                contract={contract}
-                onAddStep={(fragment) => addStep(contract, fragment)}
-              />
-            </section>
-          ))}
-        </div>
+      {isAddingStep ? (
+        <ContractAddressInput
+          chainId={draft.chainId}
+          existingContracts={draft.contracts}
+          onCancel={() => setIsAddingStep(false)}
+          onStepSelected={addStep}
+        />
       ) : (
-        <div className="rounded-lg border border-dashed border-base-300 bg-base-200 px-4 py-10 text-center">
-          <p className="font-medium">No Action Steps yet</p>
-          <p className="mt-1 text-sm text-base-content/70">
-            Start by adding a contract, resolving its ABI, and choosing a
-            method.
-          </p>
+        <div className="flex justify-start">
+          <button
+            className="daisy-btn daisy-btn-secondary"
+            onClick={() => setIsAddingStep(true)}
+            type="button"
+          >
+            <Plus className="size-4" />
+            Add Step
+          </button>
         </div>
       )}
 
@@ -134,6 +127,14 @@ export function ActionStepsEditor({
               step={step}
             />
           ))}
+        </div>
+      ) : !isAddingStep ? (
+        <div className="rounded-lg border border-dashed border-base-300 bg-base-200 px-4 py-10 text-center">
+          <p className="font-medium">No Action Steps yet</p>
+          <p className="mt-1 text-sm text-base-content/70">
+            Start by adding an Action Step, resolving a contract ABI, and
+            choosing a method.
+          </p>
         </div>
       ) : null}
     </div>
