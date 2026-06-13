@@ -81,6 +81,21 @@
         "prettier-plugin-organize-imports": "^4.3.0",
       },
     },
+    "packages/transaction-builder-database": {
+      "name": "@transaction-builder/database",
+      "version": "0.0.0",
+      "dependencies": {
+        "@transaction-builder/domain": "workspace:*",
+        "drizzle-orm": "^0.45.1",
+        "postgres": "^3.4.7",
+      },
+      "devDependencies": {
+        "@transaction-builder/typescript-config": "workspace:*",
+        "@types/bun": "^1.3.11",
+        "prettier": "^3.7.4",
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/transaction-builder-domain": {
       "name": "@transaction-builder/domain",
       "version": "0.0.0",
@@ -412,6 +427,8 @@
     "@tokenizer/token": ["@tokenizer/token@0.3.0", "", {}, "sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A=="],
 
     "@transaction-builder/commissionroad-protocol": ["@transaction-builder/commissionroad-protocol@workspace:packages/commissionroad-protocol"],
+
+    "@transaction-builder/database": ["@transaction-builder/database@workspace:packages/transaction-builder-database"],
 
     "@transaction-builder/domain": ["@transaction-builder/domain@workspace:packages/transaction-builder-domain"],
 
