@@ -2,6 +2,7 @@ export {
   commissionRoadAbi,
   commissionRoadErc721Abi,
   commissionVaultAbi,
+  erc20Abi,
   permit2Abi,
 } from "./abis";
 export {

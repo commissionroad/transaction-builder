@@ -1,3 +1,4 @@
+import { getPermit2Address } from "@transaction-builder/commissionroad-protocol";
 import type {
   ActionDefinitionV1,
   ActionStep,
@@ -21,7 +22,12 @@ export function getActionShape(definition: ActionDefinitionV1): ActionShape {
 }
 
 export function getActionTargets(definition: ActionDefinitionV1): Address[] {
-  return [...new Set(definition.steps.map((step) => step.target))];
+  const targets = definition.steps.map((step) => step.target);
+  if (definition.commissionToken.kind === "erc20") {
+    targets.unshift(getPermit2Address(definition.chainId));
+  }
+
+  return [...new Set(targets)];
 }
 
 export function getCallValueBindings(
