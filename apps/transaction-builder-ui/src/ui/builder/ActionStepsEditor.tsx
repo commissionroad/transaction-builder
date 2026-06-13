@@ -2,9 +2,14 @@ import type {
   ActionDefinitionV1,
   ActionStep,
   ActionVariable,
+  Address,
   ContractParameterBinding,
   ContractSnapshot,
 } from "@transaction-builder/domain";
+import {
+  commissionRoadAbi,
+  getCommissionRoadAddresses,
+} from "@transaction-builder/commissionroad-protocol";
 import { Plus, Trash2 } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { AbiFunctionFragment, BuilderDraft } from "./builderState";
@@ -12,6 +17,7 @@ import {
   createActionVariable,
   createContractId,
   createStepFromFunction,
+  getAbiFunctions,
   getFunctionSignature,
   updateParameterBinding,
 } from "./builderState";
@@ -24,6 +30,8 @@ interface AvailableStepOutput {
   name: string;
   type: string;
 }
+
+type SweepHelperKind = "erc20" | "erc1155";
 
 export function ActionStepsEditor({
   draft,
@@ -92,6 +100,10 @@ export function ActionStepsEditor({
     return variable;
   };
 
+  const addSweepStep = (kind: SweepHelperKind) => {
+    onChange((current) => addCommissionRoadSweepStep({ draft: current, kind }));
+  };
+
   return (
     <div className="flex flex-col gap-5">
       {draft.steps.length ? (
@@ -121,15 +133,51 @@ export function ActionStepsEditor({
           showCancel={draft.steps.length > 0}
         />
       ) : (
-        <button
-          className="daisy-btn daisy-btn-outline w-full justify-start border-dashed"
-          onClick={() => setIsAddingStep(true)}
-          type="button"
-        >
-          <Plus className="size-4" />
-          Add next Action Step
-        </button>
+        <StepCreationActions
+          onAddContractCall={() => setIsAddingStep(true)}
+          onAddSweepErc1155={() => addSweepStep("erc1155")}
+          onAddSweepErc20={() => addSweepStep("erc20")}
+        />
       )}
+    </div>
+  );
+}
+
+function StepCreationActions({
+  onAddContractCall,
+  onAddSweepErc1155,
+  onAddSweepErc20,
+}: {
+  onAddContractCall: () => void;
+  onAddSweepErc1155: () => void;
+  onAddSweepErc20: () => void;
+}) {
+  return (
+    <div className="grid gap-2 rounded-lg border border-dashed border-base-300 bg-base-100 p-3 sm:grid-cols-3">
+      <button
+        className="daisy-btn daisy-btn-outline justify-start"
+        onClick={onAddContractCall}
+        type="button"
+      >
+        <Plus className="size-4" />
+        Add Contract Call
+      </button>
+      <button
+        className="daisy-btn daisy-btn-outline justify-start"
+        onClick={onAddSweepErc20}
+        type="button"
+      >
+        <Plus className="size-4" />
+        Sweep ERC20
+      </button>
+      <button
+        className="daisy-btn daisy-btn-outline justify-start"
+        onClick={onAddSweepErc1155}
+        type="button"
+      >
+        <Plus className="size-4" />
+        Sweep ERC1155
+      </button>
     </div>
   );
 }
@@ -149,14 +197,25 @@ function StepEditor({
   onUpdate: (step: ActionStep) => void;
   step: ActionStep;
 }) {
+  const contract = draft.contracts.find(
+    (candidate) => candidate.id === step.contractId,
+  );
+  const contractLabel = getContractDisplayName(contract, step.target);
+
   return (
     <div className="rounded-lg border border-base-300 bg-base-100 p-4">
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="text-xs font-medium uppercase tracking-wide text-base-content/50">
             Step {index + 1}
           </div>
-          <div className="font-mono text-sm font-semibold">
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-semibold">{contractLabel}</span>
+            <span className="font-mono text-xs text-base-content/50">
+              {formatShortAddress(step.target)}
+            </span>
+          </div>
+          <div className="mt-1 break-all font-mono text-sm font-semibold">
             {step.functionSignature || getFunctionSignatureFromStep(step)}
           </div>
         </div>
@@ -245,6 +304,128 @@ function StepEditor({
       </div>
     </div>
   );
+}
+
+function addCommissionRoadSweepStep({
+  draft,
+  kind,
+}: {
+  draft: BuilderDraft;
+  kind: SweepHelperKind;
+}): BuilderDraft {
+  const addresses = getCommissionRoadAddresses(draft.chainId);
+  const existingContract = draft.contracts.find(
+    (contract) =>
+      contract.address.toLowerCase() === addresses.commissionRoad.toLowerCase(),
+  );
+  const contract =
+    existingContract ??
+    ({
+      id: getAvailableContractId("commissionRoad", draft.contracts),
+      chainId: draft.chainId,
+      address: addresses.commissionRoad,
+      labels: { verified: "CommissionRoad" },
+      abi: [...commissionRoadAbi],
+      abiSource: { kind: "explorer", explorer: "commissionroad-protocol" },
+    } satisfies ContractSnapshot);
+  const recipientVariable =
+    draft.variables.find(
+      (variable) =>
+        variable.name === "recipient" && variable.type === "address",
+    ) ??
+    createActionVariable({
+      existingVariables: draft.variables,
+      preferredName: "recipient",
+      type: "address",
+      label: "Recipient",
+      description: "Wallet receiving the swept token balance.",
+    });
+  const fragment = getCommissionRoadFunctionFragment(
+    kind === "erc20" ? "sweepERC20Token" : "sweepERC1155Token",
+  );
+  const defaultToken = getDefaultSweepToken({
+    commissionRoadAddress: addresses.commissionRoad,
+    draft,
+  });
+  const step = createStepFromFunction({
+    contract,
+    functionFragment: fragment,
+    stepIndex: draft.steps.length,
+  });
+
+  return {
+    ...draft,
+    contracts: existingContract
+      ? draft.contracts
+      : [...draft.contracts, contract],
+    variables: draft.variables.some(
+      (variable) => variable.name === recipientVariable.name,
+    )
+      ? draft.variables
+      : [...draft.variables, recipientVariable],
+    steps: [
+      ...draft.steps,
+      {
+        ...step,
+        kind: kind === "erc20" ? "sweepErc20" : "sweepErc1155",
+        label: kind === "erc20" ? "Sweep ERC20" : "Sweep ERC1155",
+        parameters:
+          kind === "erc20"
+            ? [
+                { kind: "fixed", value: defaultToken },
+                { kind: "actionVariable", name: recipientVariable.name },
+              ]
+            : [
+                { kind: "fixed", value: defaultToken },
+                { kind: "fixed", value: "0" },
+                { kind: "actionVariable", name: recipientVariable.name },
+              ],
+      },
+    ],
+  };
+}
+
+function getCommissionRoadFunctionFragment(
+  functionName: "sweepERC20Token" | "sweepERC1155Token",
+): AbiFunctionFragment {
+  const fragment = getAbiFunctions([...commissionRoadAbi]).find(
+    (candidate) => candidate.name === functionName,
+  );
+
+  if (!fragment) {
+    throw new Error(`${functionName} is missing from the CommissionRoad ABI.`);
+  }
+
+  return fragment;
+}
+
+function getAvailableContractId(
+  preferredId: string,
+  contracts: ContractSnapshot[],
+): string {
+  if (!contracts.some((contract) => contract.id === preferredId)) {
+    return preferredId;
+  }
+
+  return createContractId(contracts);
+}
+
+function getDefaultSweepToken({
+  commissionRoadAddress,
+  draft,
+}: {
+  commissionRoadAddress: Address;
+  draft: BuilderDraft;
+}): Address {
+  const previousTarget = [...draft.steps]
+    .reverse()
+    .find(
+      (step) =>
+        step.target.toLowerCase() !== commissionRoadAddress.toLowerCase(),
+    )?.target;
+
+  return (previousTarget ??
+    "0x0000000000000000000000000000000000000000") as Address;
 }
 
 function BindingEditor({
@@ -443,4 +624,21 @@ function toLabel(value: string): string {
 
 function getFunctionSignatureFromStep(step: ActionStep): string {
   return `${step.functionName}(${step.inputs.map((input) => input.type).join(",")})`;
+}
+
+function getContractDisplayName(
+  contract: ContractSnapshot | undefined,
+  fallbackAddress: Address,
+): string {
+  return (
+    contract?.labels.verified ??
+    contract?.labels.creator ??
+    formatShortAddress(contract?.address ?? fallbackAddress)
+  );
+}
+
+function formatShortAddress(address: string): string {
+  return address.length > 14
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : address;
 }

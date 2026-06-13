@@ -1,5 +1,6 @@
 import "src/testing/setup";
 
+import { getCommissionRoadAddresses } from "@transaction-builder/commissionroad-protocol";
 import type { ActionDefinitionV1, Address } from "@transaction-builder/domain";
 import { cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -42,6 +43,7 @@ describe("ActionStepsEditor", () => {
     );
 
     expect(view.getByText("Flow")).toBeTruthy();
+    expect(view.getByText("MockToken")).toBeTruthy();
     expect(view.getByText("balanceOf(address)")).toBeTruthy();
     expect(view.getByText("Step Outputs")).toBeTruthy();
     expect(view.getByText("balance")).toBeTruthy();
@@ -217,6 +219,53 @@ describe("ActionStepsEditor", () => {
       { kind: "actionVariable", name: "from" },
       { kind: "actionVariable", name: "to" },
     ]);
+  });
+
+  it("adds CommissionRoad sweep helpers as first-class Action Steps", async () => {
+    let currentDraft = createStepOutputDraft();
+    const view = renderWithQueryClient(
+      <DraftHarness
+        draft={currentDraft}
+        onDraftChange={(draft) => {
+          currentDraft = draft;
+        }}
+      />,
+    );
+
+    await userEvent.click(view.getByRole("button", { name: /Sweep ERC20/i }));
+
+    const commissionRoadAddress = getCommissionRoadAddresses(1).commissionRoad;
+    expect(view.getByText("CommissionRoad")).toBeTruthy();
+    expect(view.getByText("sweepERC20Token(address,address)")).toBeTruthy();
+    expect(currentDraft.contracts.at(-1)).toMatchObject({
+      address: commissionRoadAddress,
+      labels: { verified: "CommissionRoad" },
+    });
+    expect(currentDraft.steps.at(-1)).toMatchObject({
+      kind: "sweepErc20",
+      target: commissionRoadAddress,
+      functionSignature: "sweepERC20Token(address,address)",
+      parameters: [
+        { kind: "fixed", value: TOKEN_ADDRESS },
+        { kind: "actionVariable", name: "recipient" },
+      ],
+    });
+
+    await userEvent.click(view.getByRole("button", { name: /Sweep ERC1155/i }));
+
+    expect(
+      view.getByText("sweepERC1155Token(address,uint256,address)"),
+    ).toBeTruthy();
+    expect(currentDraft.steps.at(-1)).toMatchObject({
+      kind: "sweepErc1155",
+      target: commissionRoadAddress,
+      functionSignature: "sweepERC1155Token(address,uint256,address)",
+      parameters: [
+        { kind: "fixed", value: TOKEN_ADDRESS },
+        { kind: "fixed", value: "0" },
+        { kind: "actionVariable", name: "recipient" },
+      ],
+    });
   });
 });
 

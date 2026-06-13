@@ -94,12 +94,14 @@ export function createActionVariable({
   type,
   label,
   unit,
+  description,
 }: {
   existingVariables: ActionVariable[];
   preferredName: string;
   type: string;
   label: string;
   unit?: ActionVariable["unit"];
+  description?: string;
 }): ActionVariable {
   const baseName = toIdentifier(preferredName || "actionVariable");
   const existingNames = new Set(
@@ -116,6 +118,7 @@ export function createActionVariable({
   return {
     name,
     label,
+    description,
     type,
     unit,
   };
