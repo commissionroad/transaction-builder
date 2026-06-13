@@ -5,7 +5,7 @@ import type {
   ContractParameterBinding,
   ContractSnapshot,
 } from "@transaction-builder/domain";
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 import type { AbiFunctionFragment, BuilderDraft } from "./builderState";
 import {
@@ -279,8 +279,11 @@ function BindingEditor({
     }
 
     if (mode === "actionVariable") {
-      const existingVariable = variables[0];
-      const variable = existingVariable ?? createVariable(toLabel(label));
+      if (currentBinding.kind === "actionVariable") {
+        return;
+      }
+
+      const variable = createVariable(toLabel(label));
       onChange({ kind: "actionVariable", name: variable.name });
       return;
     }
@@ -339,19 +342,32 @@ function BindingEditor({
         </div>
 
         {currentBinding.kind === "actionVariable" ? (
-          <select
-            className="daisy-select daisy-select-bordered mt-2 w-full"
-            value={currentBinding.name}
-            onChange={(event) =>
-              onChange({ kind: "actionVariable", name: event.target.value })
-            }
-          >
-            {variables.map((variable) => (
-              <option key={variable.name} value={variable.name}>
-                {variable.label} ({variable.name})
-              </option>
-            ))}
-          </select>
+          <div className="mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+            <select
+              className="daisy-select daisy-select-bordered w-full"
+              value={currentBinding.name}
+              onChange={(event) =>
+                onChange({ kind: "actionVariable", name: event.target.value })
+              }
+            >
+              {variables.map((variable) => (
+                <option key={variable.name} value={variable.name}>
+                  {variable.label} ({variable.name})
+                </option>
+              ))}
+            </select>
+            <button
+              className="daisy-btn daisy-btn-outline"
+              onClick={() => {
+                const variable = createVariable(toLabel(label));
+                onChange({ kind: "actionVariable", name: variable.name });
+              }}
+              type="button"
+            >
+              <Plus className="size-4" />
+              New
+            </button>
+          </div>
         ) : currentBinding.kind === "stepOutput" ? (
           <select
             className="daisy-select daisy-select-bordered mt-2 w-full"

@@ -79,6 +79,34 @@ describe("ActionStepsEditor", () => {
 
     expect(stepOutputButtons.every((button) => button.disabled)).toBe(true);
   });
+
+  it("creates distinct Action Variables for separate fixed parameters", async () => {
+    let currentDraft = createTwoAddressParameterDraft();
+    const view = renderWithQueryClient(
+      <DraftHarness
+        draft={currentDraft}
+        onDraftChange={(draft) => {
+          currentDraft = draft;
+        }}
+      />,
+    );
+
+    const actionVariableButtons = view.getAllByRole("button", {
+      name: "Action Variable",
+    });
+
+    await userEvent.click(actionVariableButtons[0]);
+    await userEvent.click(actionVariableButtons[1]);
+
+    expect(currentDraft.variables.map((variable) => variable.name)).toEqual([
+      "from",
+      "to",
+    ]);
+    expect(currentDraft.steps[0]?.parameters).toEqual([
+      { kind: "actionVariable", name: "from" },
+      { kind: "actionVariable", name: "to" },
+    ]);
+  });
 });
 
 function DraftHarness({
@@ -202,6 +230,66 @@ function createStepOutputDraft({
         ? [readStep, writeStep]
         : [writeStep, readStep]
       : [],
+    commissionToken: { kind: "eth" },
+    commissionFormula: { kind: "flat", amount: "0.01" },
+  };
+}
+
+function createTwoAddressParameterDraft(): ActionDefinitionV1 {
+  return {
+    schemaVersion: 1,
+    title: "Transfer ownership",
+    description: "Test draft.",
+    chainId: 1,
+    commissionRoadNftId: "1",
+    contracts: [
+      {
+        id: "token",
+        chainId: 1,
+        address: TOKEN_ADDRESS,
+        labels: { verified: "MockToken" },
+        abi: [
+          {
+            type: "function",
+            name: "move",
+            stateMutability: "nonpayable",
+            inputs: [
+              { name: "from", type: "address" },
+              { name: "to", type: "address" },
+            ],
+            outputs: [],
+          },
+        ],
+        abiSource: { kind: "manual" },
+      },
+    ],
+    variables: [],
+    steps: [
+      {
+        id: "move",
+        kind: "write",
+        contractId: "token",
+        target: TOKEN_ADDRESS,
+        functionName: "move",
+        functionSignature: "move(address,address)",
+        stateMutability: "nonpayable",
+        inputs: [
+          { name: "from", type: "address" },
+          { name: "to", type: "address" },
+        ],
+        outputs: [],
+        parameters: [
+          {
+            kind: "fixed",
+            value: "0x0000000000000000000000000000000000000000",
+          },
+          {
+            kind: "fixed",
+            value: "0x0000000000000000000000000000000000000000",
+          },
+        ],
+      },
+    ],
     commissionToken: { kind: "eth" },
     commissionFormula: { kind: "flat", amount: "0.01" },
   };

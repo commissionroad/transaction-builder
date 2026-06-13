@@ -106,6 +106,22 @@ describe("validateDraft", () => {
 
     expect(result.success).toBe(true);
   });
+
+  it("rejects ERC20 commissions without token decimals", () => {
+    const result = validateDraft({
+      ...createLidoSweepAction(),
+      commissionToken: {
+        kind: "erc20",
+        address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        symbol: "USDC",
+      },
+    });
+
+    expect(result.success).toBe(false);
+    expect(getIssueMessages(result)).toContain(
+      "ERC20 Commission Token decimals are required to calculate the fee",
+    );
+  });
 });
 
 export function createLidoSweepAction(): ActionDefinitionV1 {

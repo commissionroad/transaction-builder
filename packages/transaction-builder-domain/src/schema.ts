@@ -318,5 +318,16 @@ function getSemanticIssues(definition: ActionDefinitionV1): ValidationIssue[] {
     });
   }
 
+  if (
+    definition.commissionToken.kind === "erc20" &&
+    definition.commissionToken.decimals === undefined
+  ) {
+    issues.push({
+      path: "commissionToken.decimals",
+      message:
+        "ERC20 Commission Token decimals are required to calculate the fee",
+    });
+  }
+
   return issues;
 }
