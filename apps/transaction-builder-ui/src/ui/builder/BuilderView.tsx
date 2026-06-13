@@ -72,10 +72,6 @@ export function BuilderView({
     <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6">
       <StageStepper draft={draft} setStage={setStage} stage={stage} />
 
-      {stage !== "basics" ? (
-        <CompactActionReceipt draft={draft} onEdit={() => setStage("basics")} />
-      ) : null}
-
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="min-w-0">
           <StageWorkSurface
@@ -106,7 +102,7 @@ export function BuilderView({
           </div>
         </div>
         <aside className="self-start lg:sticky lg:top-24">
-          <ActionPreview draft={draft} />
+          <PreviewCard draft={draft} />
         </aside>
       </div>
     </main>
@@ -265,19 +261,24 @@ function StageStepper({
   );
 }
 
-function CompactActionReceipt({
-  draft,
-  onEdit,
-}: {
-  draft: BuilderDraft;
-  onEdit: () => void;
-}) {
+function PreviewCard({ draft }: { draft: BuilderDraft }) {
   const summary = getDraftSummary(draft);
+  const contractNodes = getContractCallTree(draft);
 
   return (
-    <div className="grid gap-3 rounded-lg border border-base-300 bg-base-200 px-4 py-3 shadow-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
-      <div className="min-w-0">
-        <div className="truncate font-semibold">
+    <section className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <GitBranch className="size-4 text-secondary" />
+          Preview
+        </div>
+        <div className="daisy-badge daisy-badge-outline">
+          {draft.steps.length}
+        </div>
+      </div>
+
+      <div className="border-b border-base-300 pb-3">
+        <div className="truncate text-lg font-semibold">
           {draft.title || "Untitled Action"}
         </div>
         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-base-content/60">
@@ -286,34 +287,13 @@ function CompactActionReceipt({
           <span>{summary.commission}</span>
         </div>
       </div>
-      <button className="daisy-btn daisy-btn-sm" onClick={onEdit} type="button">
-        Edit Basics
-      </button>
-    </div>
-  );
-}
-
-function ActionPreview({ draft }: { draft: BuilderDraft }) {
-  const contractNodes = getContractCallTree(draft);
-
-  return (
-    <section className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <GitBranch className="size-4 text-secondary" />
-          Action Preview
-        </div>
-        <div className="daisy-badge daisy-badge-outline">
-          {draft.steps.length}
-        </div>
-      </div>
 
       {!contractNodes.length ? (
-        <div className="rounded-lg border border-dashed border-base-300 bg-base-200 px-3 py-6 text-center text-sm text-base-content/60">
+        <div className="mt-3 rounded-lg border border-dashed border-base-300 bg-base-200 px-3 py-6 text-center text-sm text-base-content/60">
           Contract calls will appear here.
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="mt-4 grid gap-3">
           {contractNodes.map((node) => (
             <div key={node.contractId}>
               <div className="flex items-start gap-2">

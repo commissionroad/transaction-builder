@@ -1,6 +1,6 @@
 import type { ContractSnapshot } from "@transaction-builder/domain";
-import { BookOpen, ChevronDown, PencilLine, Search } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { ChevronDown, Search } from "lucide-react";
+import { useId, useMemo, useState, type CSSProperties } from "react";
 import type { AbiFunctionFragment } from "../builder/builderState";
 import {
   getAbiFunctions,
@@ -16,7 +16,9 @@ export function MethodPicker({
   onAddStep: (fragment: AbiFunctionFragment) => void;
 }) {
   const [filter, setFilter] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+  const pickerId = useStablePickerId();
+  const popoverId = `method-picker-${pickerId}`;
+  const anchorName = `--method-picker-${pickerId}`;
   const functions = getAbiFunctions(contract.abi);
   const visibleFunctions = useMemo(
     () =>
@@ -40,19 +42,29 @@ export function MethodPicker({
     );
   }
 
+  const handleAddStep = (fragment: AbiFunctionFragment) => {
+    onAddStep(fragment);
+    document.getElementById(popoverId)?.hidePopover?.();
+  };
+
   return (
-    <div className="grid gap-2">
+    <>
       <button
-        aria-expanded={isOpen}
         className="daisy-btn daisy-btn-outline w-full justify-between"
-        onClick={() => setIsOpen((current) => !current)}
+        popoverTarget={popoverId}
+        style={{ anchorName } as CSSProperties}
         type="button"
       >
         Choose method
         <ChevronDown className="size-4" />
       </button>
-      {isOpen ? (
-        <div className="rounded-lg border border-base-300 bg-base-200 p-2">
+      <ul
+        className="daisy-dropdown daisy-menu daisy-menu-sm max-h-96 w-[min(44rem,calc(100vw-2rem))] overflow-y-auto rounded-box border border-base-300 bg-base-100 p-2 shadow-xl"
+        id={popoverId}
+        popover="auto"
+        style={{ positionAnchor: anchorName } as CSSProperties}
+      >
+        <li className="p-1">
           <label className="daisy-input daisy-input-bordered flex items-center gap-2 bg-base-100">
             <Search className="size-4 opacity-50" />
             <input
@@ -63,81 +75,75 @@ export function MethodPicker({
               onChange={(event) => setFilter(event.target.value)}
             />
           </label>
+        </li>
 
-          {visibleFunctions.length ? (
-            <ul className="daisy-menu daisy-menu-sm mt-2 max-h-96 w-full overflow-y-auto rounded-lg bg-base-200 p-0">
-              {writeFunctions.length ? (
-                <MethodGroup
-                  fragments={writeFunctions}
-                  icon={<PencilLine className="size-4" />}
-                  label="Write"
-                  open
-                  onAddStep={(fragment) => {
-                    onAddStep(fragment);
-                    setIsOpen(false);
-                  }}
-                />
-              ) : null}
+        {visibleFunctions.length ? (
+          <>
+            {writeFunctions.length ? (
+              <MethodSection
+                fragments={writeFunctions}
+                label="Write methods"
+                onAddStep={handleAddStep}
+              />
+            ) : null}
 
-              {readFunctions.length ? (
-                <MethodGroup
-                  fragments={readFunctions}
-                  icon={<BookOpen className="size-4" />}
-                  label="Read"
-                  open={!writeFunctions.length}
-                  onAddStep={(fragment) => {
-                    onAddStep(fragment);
-                    setIsOpen(false);
-                  }}
-                />
-              ) : null}
-            </ul>
-          ) : (
-            <div className="mt-2 rounded-lg border border-dashed border-base-300 bg-base-100 px-3 py-6 text-center text-sm text-base-content/60">
+            {readFunctions.length ? (
+              <MethodSection
+                fragments={readFunctions}
+                label="Read methods"
+                separated={!!writeFunctions.length}
+                onAddStep={handleAddStep}
+              />
+            ) : null}
+          </>
+        ) : (
+          <li className="daisy-menu-disabled">
+            <span className="justify-center py-6 text-base-content/60">
               No methods match that filter.
-            </div>
-          )}
-        </div>
-      ) : null}
-    </div>
+            </span>
+          </li>
+        )}
+      </ul>
+    </>
   );
 }
 
-function MethodGroup({
+function MethodSection({
   fragments,
-  icon,
   label,
-  open = false,
   onAddStep,
+  separated = false,
 }: {
   fragments: AbiFunctionFragment[];
-  icon: ReactNode;
   label: string;
-  open?: boolean;
   onAddStep: (fragment: AbiFunctionFragment) => void;
+  separated?: boolean;
 }) {
   return (
-    <li>
-      <details open={open}>
-        <summary>
-          {icon}
+    <>
+      <li
+        className={`daisy-menu-title ${separated ? "mt-2 border-t border-base-300 pt-3" : "pt-2"}`}
+      >
+        <span className="flex items-center justify-between gap-2">
           {label}
-          <span className="daisy-badge daisy-badge-sm daisy-badge-outline ml-auto">
+          <span className="daisy-badge daisy-badge-sm daisy-badge-outline">
             {fragments.length}
           </span>
-        </summary>
-        <ul>
-          {fragments.map((fragment) => (
-            <MethodButton
-              fragment={fragment}
-              key={getFunctionSignature(fragment)}
-              onAddStep={onAddStep}
-            />
-          ))}
-        </ul>
-      </details>
-    </li>
+        </span>
+      </li>
+      {fragments.map((fragment) => (
+        <MethodButton
+          fragment={fragment}
+          key={getFunctionSignature(fragment)}
+          onAddStep={onAddStep}
+        />
+      ))}
+    </>
   );
+}
+
+function useStablePickerId(): string {
+  return useId().replace(/[^a-zA-Z0-9_-]/g, "");
 }
 
 function MethodButton({
