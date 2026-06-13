@@ -49,4 +49,45 @@ describe("snippet generation", () => {
       "independent Actions only",
     );
   });
+
+  it("generates Viem Permit2 funding code for ERC20 commissions", () => {
+    const snippet = generateViemSnippet(createErc20CommissionAction());
+
+    expect(snippet).toContain('parseUnits("0.25", 6)');
+    expect(snippet).toContain("publicClient: PublicClient");
+    expect(snippet).toContain('functionName: "approve"');
+    expect(snippet).toContain(
+      'args: ["0x000000000022D473030F116dDEE9F6B43aC78BA3" as Address, commission]',
+    );
+    expect(snippet).toContain("walletClient.signTypedData");
+    expect(snippet).toContain('functionName: "permitTransferFrom"');
+    expect(snippet).toContain("permit2FundingCall");
+  });
+
+  it("generates Wagmi Permit2 funding code for ERC20 commissions", () => {
+    const snippet = generateWagmiSnippet(createErc20CommissionAction());
+
+    expect(snippet).toContain("useSignTypedData");
+    expect(snippet).toContain("usePublicClient");
+    expect(snippet).toContain("writeContractAsync");
+    expect(snippet).toContain("signTypedDataAsync");
+    expect(snippet).toContain('functionName: "permitTransferFrom"');
+    expect(snippet).toContain("publicClient.waitForTransactionReceipt");
+  });
 });
+
+function createErc20CommissionAction() {
+  return {
+    ...createLidoSweepAction(),
+    commissionToken: {
+      kind: "erc20" as const,
+      address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48" as const,
+      symbol: "USDC",
+      decimals: 6,
+    },
+    commissionFormula: {
+      kind: "flat" as const,
+      amount: "0.25",
+    },
+  };
+}

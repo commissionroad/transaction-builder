@@ -1,7 +1,9 @@
 import {
   ETH_SENTINEL,
   commissionRoadAbi,
+  erc20Abi,
   getCommissionRoadAddresses,
+  permit2Abi,
 } from "@transaction-builder/commissionroad-protocol";
 import { getActionShape } from "../compile";
 import type {
@@ -68,14 +70,38 @@ export function createSnippetContext(definition: ActionDefinitionV1) {
     batchCallLines: definition.steps
       .map((step) => formatBatchCall(step))
       .join(",\n"),
+    chainId: definition.chainId,
     commissionExpression: formatCommissionExpression(definition),
+    commissionRoadAddress: addresses.commissionRoad,
+    commissionTokenDecimals: getCommissionTokenDecimals(definition),
     commissionToken:
       definition.commissionToken.kind === "eth"
         ? ETH_SENTINEL
         : definition.commissionToken.address,
     commissionRoadAbiLiteral: JSON.stringify(commissionRoadAbi, null, 2),
+    erc20AbiLiteral: JSON.stringify(erc20Abi, null, 2),
     nftId: definition.commissionRoadNftId ?? "0",
+    permit2AbiLiteral: JSON.stringify(permit2Abi, null, 2),
+    permit2Address: addresses.permit2,
+    permit2TypedDataTypesLiteral: JSON.stringify(
+      {
+        PermitTransferFrom: [
+          { name: "permitted", type: "TokenPermissions" },
+          { name: "spender", type: "address" },
+          { name: "nonce", type: "uint256" },
+          { name: "deadline", type: "uint256" },
+        ],
+        TokenPermissions: [
+          { name: "token", type: "address" },
+          { name: "amount", type: "uint256" },
+        ],
+      },
+      null,
+      2,
+    ),
     totalValueExpression: formatTotalValueExpression(definition),
+    usesFlatCommission: definition.commissionFormula.kind === "flat",
+    usesPermit2Funding: definition.commissionToken.kind === "erc20",
   };
 }
 
@@ -128,12 +154,20 @@ function formatFixedValue(value: unknown, abiType?: string): string {
 
 function formatCommissionExpression(definition: ActionDefinitionV1): string {
   if (definition.commissionFormula.kind === "flat") {
-    return `${definition.commissionFormula.amount}n`;
+    return `parseUnits(${JSON.stringify(definition.commissionFormula.amount)}, ${getCommissionTokenDecimals(definition)})`;
   }
 
   return `(${definition.commissionFormula.variable} * ${BigInt(
     definition.commissionFormula.bps,
   )}n) / 10_000n`;
+}
+
+function getCommissionTokenDecimals(definition: ActionDefinitionV1): number {
+  if (definition.commissionToken.kind === "eth") {
+    return 18;
+  }
+
+  return definition.commissionToken.decimals ?? 18;
 }
 
 function formatTotalValueExpression(definition: ActionDefinitionV1): string {
