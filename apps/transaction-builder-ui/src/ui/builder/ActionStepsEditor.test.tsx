@@ -49,7 +49,7 @@ describe("ActionStepsEditor", () => {
     );
 
     expect(view.getAllByText("Step 1").length).toBeGreaterThan(0);
-    expect(view.getByText("Add")).toBeTruthy();
+    expect(view.getByRole("button", { name: /Add Action Step/i })).toBeTruthy();
     expect(view.getByText("MockToken")).toBeTruthy();
     expect(view.getByText("balanceOf(address)")).toBeTruthy();
     expect(view.getByText("Step Outputs")).toBeTruthy();

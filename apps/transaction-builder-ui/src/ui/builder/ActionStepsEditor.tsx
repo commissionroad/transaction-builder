@@ -10,7 +10,6 @@ import {
   commissionRoadAbi,
   getCommissionRoadAddresses,
 } from "@transaction-builder/commissionroad-protocol";
-import classNames from "classnames";
 import { Check, Copy, Plus, Trash2 } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { AbiFunctionFragment, BuilderDraft } from "./builderState";
@@ -102,78 +101,47 @@ export function ActionStepsEditor({
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-[7.5rem_minmax(0,1fr)]">
-      <FlowStepsRail
-        isAddingStep={shouldShowComposer}
-        stepCount={draft.steps.length}
-      />
+    <div className="flex flex-col gap-5">
+      {draft.steps.length ? (
+        <div className="flex flex-col gap-3">
+          {draft.steps.map((step, index) => (
+            <StepEditor
+              addVariable={addVariable}
+              draft={draft}
+              index={index}
+              key={step.id}
+              onDelete={() => deleteStep(step.id)}
+              onUpdate={updateStep}
+              step={step}
+            />
+          ))}
+        </div>
+      ) : null}
 
-      <div className="grid min-w-0 gap-4">
-        {draft.steps.map((step, index) => (
-          <StepEditor
-            addVariable={addVariable}
-            draft={draft}
-            index={index}
-            key={step.id}
-            onDelete={() => deleteStep(step.id)}
-            onUpdate={updateStep}
-            step={step}
-          />
-        ))}
-
-        {shouldShowComposer ? (
-          <ContractAddressInput
-            chainId={draft.chainId}
-            existingContracts={draft.contracts}
-            onCancel={() => setIsAddingStep(false)}
-            quickActions={
-              draft.steps.length
-                ? [
-                    {
-                      description:
-                        "Use CommissionRoad sweepERC20 without pasting its contract.",
-                      label: "Sweep ERC20",
-                      onSelect: addSweepStep,
-                    },
-                  ]
-                : undefined
-            }
-            onStepSelected={addStep}
-            showCancel={draft.steps.length > 0}
-          />
-        ) : (
-          <StepCreationActions onAddActionStep={() => setIsAddingStep(true)} />
-        )}
-      </div>
+      {shouldShowComposer ? (
+        <ContractAddressInput
+          chainId={draft.chainId}
+          existingContracts={draft.contracts}
+          onCancel={() => setIsAddingStep(false)}
+          quickActions={
+            draft.steps.length
+              ? [
+                  {
+                    description:
+                      "Use CommissionRoad sweepERC20 without pasting its contract.",
+                    label: "Sweep ERC20",
+                    onSelect: addSweepStep,
+                  },
+                ]
+              : undefined
+          }
+          onStepSelected={addStep}
+          showCancel={draft.steps.length > 0}
+        />
+      ) : (
+        <StepCreationActions onAddActionStep={() => setIsAddingStep(true)} />
+      )}
     </div>
-  );
-}
-
-function FlowStepsRail({
-  isAddingStep,
-  stepCount,
-}: {
-  isAddingStep: boolean;
-  stepCount: number;
-}) {
-  return (
-    <ol className="daisy-steps daisy-steps-vertical self-start">
-      {Array.from({ length: stepCount }).map((_, index) => (
-        <li
-          className="daisy-step daisy-step-secondary text-xs font-semibold"
-          key={index}
-        >
-          Step {index + 1}
-        </li>
-      ))}
-      <li
-        className={classNames("daisy-step text-xs font-semibold", {
-          "daisy-step-secondary": isAddingStep,
-        })}
-      >
-        Add
-      </li>
-    </ol>
   );
 }
 
