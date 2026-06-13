@@ -7,14 +7,19 @@ import {
   createMemoryHistory,
   createRouter,
 } from "@tanstack/react-router";
-import { act, render } from "@testing-library/react";
-import { describe, expect, it } from "bun:test";
+import { act, cleanup, render } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "bun:test";
 import { WagmiProvider } from "wagmi";
 import { wagmiConfig } from "src/network/wagmi";
 import { routeTree } from "src/router";
 import { commissionRoadTheme } from "src/ui/rainbowKitTheme";
 
 describe("BuilderView", () => {
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = "";
+  });
+
   it("renders the initial builder shell", async () => {
     const router = createRouter({
       routeTree,

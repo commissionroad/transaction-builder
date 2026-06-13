@@ -4,6 +4,7 @@ import {
   createRouter,
   Outlet,
 } from "@tanstack/react-router";
+import { ActionRoute } from "./ui/action/ActionRoute";
 import { BuilderRoute } from "./ui/builder/BuilderRoute";
 import { Header } from "./ui/navigation/Header";
 
@@ -25,14 +26,7 @@ const builderRoute = createRoute({
 const actionRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/t/$slug",
-  component: () => (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10">
-      <h1 className="text-3xl font-semibold">Action Page</h1>
-      <p className="max-w-2xl text-base-content/70">
-        Published Action execution pages land here in the next slice.
-      </p>
-    </main>
-  ),
+  component: ActionRoute,
 });
 
 export const routeTree = rootRoute.addChildren([builderRoute, actionRoute]);

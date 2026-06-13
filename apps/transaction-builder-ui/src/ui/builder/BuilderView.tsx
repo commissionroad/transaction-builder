@@ -2,12 +2,11 @@ import {
   SUPPORTED_CHAIN_IDS,
   getChainConfig,
 } from "@transaction-builder/commissionroad-protocol";
-import { validateDraft } from "@transaction-builder/domain";
-import { Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionStepsEditor } from "./ActionStepsEditor";
 import { ActionVariableEditor } from "./ActionVariableEditor";
 import { CommissionEditor } from "./CommissionEditor";
+import { ShareActionPanel } from "./ShareActionPanel";
 import { SnippetPanel } from "./SnippetPanel";
 import {
   createInitialBuilderDraft,
@@ -15,12 +14,15 @@ import {
   type BuilderDraft,
 } from "./builderState";
 
-export function BuilderView() {
-  const [draft, setDraft] = useState<BuilderDraft>(() =>
-    createInitialBuilderDraft(),
+export function BuilderView({
+  initialDraft,
+}: {
+  initialDraft?: BuilderDraft;
+} = {}) {
+  const [draft, setDraft] = useState<BuilderDraft>(
+    () => initialDraft ?? createInitialBuilderDraft(),
   );
-  const validation = useMemo(() => validateDraft(draft), [draft]);
-  const canShare = validation.success && getDraftStepCount(draft) > 0;
+  const hasActionSteps = useMemo(() => getDraftStepCount(draft) > 0, [draft]);
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -137,29 +139,7 @@ export function BuilderView() {
       <aside className="flex flex-col gap-4">
         <CommissionEditor draft={draft} onChange={setDraft} />
         <ActionVariableEditor draft={draft} onChange={setDraft} />
-
-        <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
-          <div className="daisy-card-body gap-4">
-            <h2 className="text-lg font-semibold">Share</h2>
-            <p className="text-sm text-base-content/70">
-              Share Action creates an immutable Published Action and returns a
-              short `/t/` link.
-            </p>
-            <button
-              className="daisy-btn daisy-btn-primary w-full"
-              disabled={!canShare}
-              type="button"
-            >
-              <Share2 className="size-4" />
-              Share Action
-            </button>
-            {!validation.success ? (
-              <div className="rounded-lg bg-base-200 p-3 text-xs text-base-content/70">
-                {validation.issues[0]?.message}
-              </div>
-            ) : null}
-          </div>
-        </section>
+        <ShareActionPanel draft={draft} hasActionSteps={hasActionSteps} />
       </aside>
     </main>
   );
