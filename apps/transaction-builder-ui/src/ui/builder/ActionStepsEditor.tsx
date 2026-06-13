@@ -33,6 +33,7 @@ export function ActionStepsEditor({
   onChange: Dispatch<SetStateAction<BuilderDraft>>;
 }) {
   const [isAddingStep, setIsAddingStep] = useState(false);
+  const shouldShowComposer = isAddingStep || !draft.steps.length;
 
   const addStep = (
     contract: ContractSnapshot,
@@ -93,26 +94,6 @@ export function ActionStepsEditor({
 
   return (
     <div className="flex flex-col gap-5">
-      {isAddingStep ? (
-        <ContractAddressInput
-          chainId={draft.chainId}
-          existingContracts={draft.contracts}
-          onCancel={() => setIsAddingStep(false)}
-          onStepSelected={addStep}
-        />
-      ) : (
-        <div className="flex justify-start">
-          <button
-            className="daisy-btn daisy-btn-secondary"
-            onClick={() => setIsAddingStep(true)}
-            type="button"
-          >
-            <Plus className="size-4" />
-            Add Step
-          </button>
-        </div>
-      )}
-
       {draft.steps.length ? (
         <div className="flex flex-col gap-3">
           <h3 className="text-lg font-semibold">Flow</h3>
@@ -128,15 +109,27 @@ export function ActionStepsEditor({
             />
           ))}
         </div>
-      ) : !isAddingStep ? (
-        <div className="rounded-lg border border-dashed border-base-300 bg-base-200 px-4 py-10 text-center">
-          <p className="font-medium">No Action Steps yet</p>
-          <p className="mt-1 text-sm text-base-content/70">
-            Start by adding an Action Step, resolving a contract ABI, and
-            choosing a method.
-          </p>
-        </div>
       ) : null}
+
+      {shouldShowComposer ? (
+        <ContractAddressInput
+          chainId={draft.chainId}
+          existingContracts={draft.contracts}
+          onCancel={() => setIsAddingStep(false)}
+          onStepSelected={addStep}
+          stepNumber={draft.steps.length + 1}
+          showCancel={draft.steps.length > 0}
+        />
+      ) : (
+        <button
+          className="daisy-btn daisy-btn-outline w-full justify-start border-dashed"
+          onClick={() => setIsAddingStep(true)}
+          type="button"
+        >
+          <Plus className="size-4" />
+          Add next Action Step
+        </button>
+      )}
     </div>
   );
 }

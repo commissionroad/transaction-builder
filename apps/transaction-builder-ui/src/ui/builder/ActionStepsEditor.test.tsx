@@ -28,7 +28,6 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
-    await userEvent.click(view.getByRole("button", { name: "Add Step" }));
     await userEvent.type(
       view.getByLabelText("Contract address"),
       TOKEN_ADDRESS,
@@ -38,7 +37,6 @@ describe("ActionStepsEditor", () => {
       await view.findByText(/Using the ABI already in this Action/i),
     ).toBeTruthy();
 
-    await userEvent.click(view.getByRole("button", { name: /Choose Method/i }));
     await userEvent.click(
       view.getByRole("button", { name: /balanceOf\(address\)/i }),
     );
@@ -80,19 +78,18 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
-    await userEvent.click(view.getByRole("button", { name: "Add Step" }));
     await userEvent.type(
       view.getByLabelText("Contract address"),
       TOKEN_ADDRESS,
     );
 
-    expect(await view.findByText(/ABI ready for MockToken/i)).toBeTruthy();
+    expect(await view.findByText("MockToken")).toBeTruthy();
+    expect(await view.findByText(/ABI ready/i)).toBeTruthy();
     expect(fetchUrls).toHaveLength(1);
     expect(new URL(fetchUrls[0]).searchParams.get("action")).toBe(
       "getsourcecode",
     );
 
-    await userEvent.click(view.getByRole("button", { name: /Choose Method/i }));
     await userEvent.click(
       view.getByRole("button", { name: /transfer\(address,uint256\)/i }),
     );
@@ -122,7 +119,6 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
-    await userEvent.click(view.getByRole("button", { name: "Add Step" }));
     await userEvent.type(
       view.getByLabelText("Contract address"),
       TOKEN_ADDRESS,
@@ -134,11 +130,12 @@ describe("ActionStepsEditor", () => {
       view.getByLabelText("Manual ABI"),
       escapeUserEventText(JSON.stringify(TOKEN_ABI)),
     );
-    await userEvent.click(view.getByRole("button", { name: "Use Manual ABI" }));
+    await userEvent.click(
+      view.getByRole("button", { name: "Load Manual ABI" }),
+    );
 
-    expect(await view.findByText(/Manual ABI ready/i)).toBeTruthy();
+    expect(await view.findByText(/Manual ABI loaded/i)).toBeTruthy();
 
-    await userEvent.click(view.getByRole("button", { name: /Choose Method/i }));
     await userEvent.click(
       view.getByRole("button", { name: /transfer\(address,uint256\)/i }),
     );

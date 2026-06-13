@@ -1,6 +1,12 @@
 import type { Address, ContractSnapshot } from "@transaction-builder/domain";
-import { AlertTriangle, FileJson, Loader2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  FileJson,
+  Loader2,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AbiFunctionFragment,
   BuilderDraft,
@@ -14,6 +20,8 @@ export function ContractAddressInput({
   existingContracts,
   onCancel,
   onStepSelected,
+  showCancel = true,
+  stepNumber,
 }: {
   chainId: BuilderDraft["chainId"];
   existingContracts: ContractSnapshot[];
@@ -22,6 +30,8 @@ export function ContractAddressInput({
     contract: ContractSnapshot,
     functionFragment: AbiFunctionFragment,
   ) => void;
+  showCancel?: boolean;
+  stepNumber: number;
 }) {
   const [addressText, setAddressText] = useState("");
   const [manualContract, setManualContract] = useState<ContractSnapshot | null>(
@@ -30,6 +40,7 @@ export function ContractAddressInput({
   const [manualAbiText, setManualAbiText] = useState("");
   const [manualAbiError, setManualAbiError] = useState<string | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null);
   const address = useMemo(
     () => (isAddress(addressText) ? (addressText as Address) : undefined),
     [addressText],
@@ -80,6 +91,10 @@ export function ContractAddressInput({
     }
   }, [query.isError]);
 
+  useEffect(() => {
+    addressInputRef.current?.focus();
+  }, []);
+
   const handleUseManualAbi = () => {
     setManualAbiError(null);
     if (!address) {
@@ -110,23 +125,30 @@ export function ContractAddressInput({
   };
 
   return (
-    <div className="rounded-lg border border-base-300 bg-base-100 p-4">
+    <div className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-semibold">New Action Step</h3>
+        <div className="min-w-0">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <span className="daisy-badge daisy-badge-secondary daisy-badge-outline">
+              Step {stepNumber}
+            </span>
+            <h3 className="font-semibold">Add Action Step</h3>
+          </div>
           <p className="text-sm text-base-content/70">
-            Paste a contract address. The builder will resolve the ABI and then
-            show available methods.
+            Paste a contract address. Methods appear as soon as the ABI is
+            ready.
           </p>
         </div>
-        <button
-          aria-label="Cancel new Action Step"
-          className="daisy-btn daisy-btn-ghost daisy-btn-sm"
-          onClick={onCancel}
-          type="button"
-        >
-          <X className="size-4" />
-        </button>
+        {showCancel ? (
+          <button
+            aria-label="Cancel new Action Step"
+            className="daisy-btn daisy-btn-ghost daisy-btn-sm"
+            onClick={onCancel}
+            type="button"
+          >
+            <X className="size-4" />
+          </button>
+        ) : null}
       </div>
 
       <div className="grid gap-3">
@@ -137,6 +159,7 @@ export function ContractAddressInput({
             </span>
           </span>
           <input
+            ref={addressInputRef}
             className="daisy-input daisy-input-bordered w-full font-mono text-sm"
             placeholder="0x..."
             value={addressText}
@@ -145,6 +168,7 @@ export function ContractAddressInput({
               setManualContract(null);
               setManualAbiError(null);
               setManualAbiText("");
+              setIsManualOpen(false);
             }}
           />
         </label>
@@ -159,7 +183,7 @@ export function ContractAddressInput({
       {address && query.isFetching ? (
         <div className="mt-3 flex items-center gap-2 rounded-lg border border-base-300 bg-base-200 p-3 text-sm">
           <Loader2 className="size-4 animate-spin text-secondary" />
-          Looking up ABI from the block explorer...
+          Resolving ABI from the block explorer...
         </div>
       ) : null}
 
@@ -171,12 +195,19 @@ export function ContractAddressInput({
       ) : null}
 
       {resolvedContract ? (
-        <div className="mt-3 rounded-lg bg-success p-3 text-sm text-neutral">
-          {getResolvedContractMessage({
-            contract: resolvedContract,
-            existingContract: !!existingContract,
-            manualContract: !!manualContract,
-          })}
+        <div className="mt-3 flex items-start gap-2 rounded-lg bg-success p-3 text-sm text-neutral">
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <div className="font-medium">
+              {getResolvedContractLabel(resolvedContract)}
+            </div>
+            <div className="opacity-70">
+              {getResolvedContractMessage({
+                existingContract: !!existingContract,
+                manualContract: !!manualContract,
+              })}
+            </div>
+          </div>
         </div>
       ) : null}
 
@@ -197,7 +228,7 @@ export function ContractAddressInput({
         <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
           <span className="inline-flex items-center gap-2">
             <FileJson className="size-4" />
-            Provide ABI manually
+            Paste ABI manually
           </span>
         </summary>
         <div className="border-t border-base-300 p-4 pt-3">
@@ -221,7 +252,7 @@ export function ContractAddressInput({
             onClick={handleUseManualAbi}
             type="button"
           >
-            Use Manual ABI
+            Load Manual ABI
           </button>
         </div>
       </details>
@@ -242,25 +273,26 @@ function getLookupErrorMessage(error: Error | null): string {
   return `${message}. Paste a verified ABI below if the explorer cannot resolve this contract.`;
 }
 
+function getResolvedContractLabel(contract: ContractSnapshot): string {
+  return (
+    contract.labels.verified ?? contract.labels.creator ?? contract.address
+  );
+}
+
 function getResolvedContractMessage({
-  contract,
   existingContract,
   manualContract,
 }: {
-  contract: ContractSnapshot;
   existingContract: boolean;
   manualContract: boolean;
 }): string {
-  const label =
-    contract.labels.verified ?? contract.labels.creator ?? contract.address;
-
   if (manualContract) {
-    return `Manual ABI ready for ${label}. Choose a method to add this Action Step.`;
+    return "Manual ABI loaded. Choose a method below to add this step.";
   }
 
   if (existingContract) {
-    return `Using the ABI already in this Action for ${label}. Choose a method to add this Action Step.`;
+    return "Using the ABI already in this Action. Choose a method below to add this step.";
   }
 
-  return `ABI ready for ${label}. Choose a method to add this Action Step.`;
+  return "ABI ready. Choose a method below to add this step.";
 }

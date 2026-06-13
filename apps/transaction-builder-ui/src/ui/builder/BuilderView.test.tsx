@@ -50,7 +50,8 @@ describe("BuilderView", () => {
     expect(view?.getByLabelText("Action Chain")).toBeTruthy();
     expect(view?.getByLabelText("Action name")).toBeTruthy();
     expect(view?.getByLabelText("Description")).toBeTruthy();
-    expect(view?.getByText("No Action Steps yet")).toBeTruthy();
+    expect(view?.getByText("Add Action Step")).toBeTruthy();
+    expect(view?.getByLabelText("Contract address")).toBeTruthy();
     expect(
       (
         view?.getByRole("button", {
