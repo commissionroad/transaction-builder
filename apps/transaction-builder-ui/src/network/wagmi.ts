@@ -9,7 +9,7 @@ export type ChainId = typeof mainnet.id | typeof base.id | typeof sepolia.id;
 export const wagmiConfig = getDefaultConfig({
   appName: "CommissionRoad Transaction Builder",
   projectId:
-    import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID ??
+    import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID ||
     FALLBACK_WALLET_CONNECT_PROJECT_ID,
   chains: [mainnet, base, sepolia],
   appDescription: "Build shareable CommissionRoad Actions",
