@@ -18,6 +18,30 @@ describe("Published Action routes", () => {
     expect(body).toEqual({ status: "ok" });
   });
 
+  it("GET /ready returns ready when the repository can reach storage", async () => {
+    const app = createApp({ actionRepository: createMemoryRepository() });
+
+    const response = await app.handle(new Request("http://localhost/ready"));
+    const body = (await response.json()) as { status: string };
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ status: "ready" });
+  });
+
+  it("GET /ready returns 503 when storage is unavailable", async () => {
+    const repository = createMemoryRepository();
+    repository.ping = async () => {
+      throw new Error("database unavailable");
+    };
+    const app = createApp({ actionRepository: repository });
+
+    const response = await app.handle(new Request("http://localhost/ready"));
+    const body = (await response.json()) as { status: string };
+
+    expect(response.status).toBe(503);
+    expect(body).toEqual({ status: "not_ready" });
+  });
+
   it("POST /actions rejects malformed body", async () => {
     const app = createApp({ actionRepository: createMemoryRepository() });
 
@@ -109,6 +133,8 @@ function createMemoryRepository(): PublishedActionRepository & {
 
   return {
     records,
+
+    async ping() {},
 
     async hasSlug(slug) {
       return records.has(slug);

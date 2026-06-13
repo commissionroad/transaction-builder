@@ -1,6 +1,6 @@
 import { db, publishedActions } from "@transaction-builder/database";
 import type { ActionDefinitionV1 } from "@transaction-builder/domain";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { SlugRepository } from "./slug";
 
 export interface CreatePublishedActionInput {
@@ -21,10 +21,15 @@ export interface PublishedActionRecord {
 export interface PublishedActionRepository extends SlugRepository {
   create(input: CreatePublishedActionInput): Promise<PublishedActionRecord>;
   findBySlug(slug: string): Promise<PublishedActionRecord | null>;
+  ping(): Promise<void>;
 }
 
 export function createPublishedActionRepository(): PublishedActionRepository {
   return {
+    async ping() {
+      await db.execute(sql`select 1`);
+    },
+
     async hasSlug(slug) {
       const [row] = await db
         .select({ slug: publishedActions.slug })

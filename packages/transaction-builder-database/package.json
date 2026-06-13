@@ -7,9 +7,12 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun run scripts/migrate.ts",
+    "db:push": "drizzle-kit push",
     "test": "echo \"@transaction-builder/database has no tests yet\"",
     "lint": "echo \"@transaction-builder/database lint not configured yet\"",
-    "format": "prettier --write 'src/**/*.{ts,tsx,json,md}'"
+    "format": "prettier --write 'src/**/*.{ts,tsx,json,md}' 'scripts/**/*.ts' drizzle.config.ts package.json"
   },
   "dependencies": {
     "@transaction-builder/domain": "workspace:*",
@@ -19,6 +22,7 @@
   "devDependencies": {
     "@transaction-builder/typescript-config": "workspace:*",
     "@types/bun": "^1.3.11",
+    "drizzle-kit": "^0.31.8",
     "prettier": "^3.7.4",
     "typescript": "^5.9.3"
   }

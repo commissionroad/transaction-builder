@@ -3,9 +3,14 @@
   "type": "module",
   "name": "transaction-builder",
   "packageManager": "bun@1.3.3",
-  "workspaces": ["apps/*", "packages/*", "servers/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "servers/*"
+  ],
   "scripts": {
     "build": "turbo run build",
+    "db:migrate": "bun run --cwd packages/transaction-builder-database db:migrate",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",

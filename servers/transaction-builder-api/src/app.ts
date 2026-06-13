@@ -39,5 +39,37 @@ export function createApp({ actionRepository }: CreateAppOptions) {
         },
       },
     )
+    .get(
+      "/ready",
+      async ({ set }) => {
+        try {
+          await actionRepository.ping();
+
+          return {
+            status: "ready",
+          };
+        } catch {
+          set.status = 503;
+          return {
+            status: "not_ready",
+          };
+        }
+      },
+      {
+        response: {
+          200: t.Object({
+            status: t.Literal("ready"),
+          }),
+          503: t.Object({
+            status: t.Literal("not_ready"),
+          }),
+        },
+        detail: {
+          summary: "Readiness check",
+          description: "Returns ready when the API can reach its database.",
+          tags: ["System"],
+        },
+      },
+    )
     .use(createActionsRoutes(actionRepository));
 }
