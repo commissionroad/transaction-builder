@@ -191,7 +191,7 @@ describe("ActionStepsEditor", () => {
     expect(stepOutputButtons.every((button) => button.disabled)).toBe(true);
   });
 
-  it("creates distinct Action Variables for separate fixed parameters", async () => {
+  it("creates distinct Variables for separate fixed parameters", async () => {
     let currentDraft = createTwoAddressParameterDraft();
     const view = renderWithQueryClient(
       <DraftHarness
@@ -202,12 +202,12 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
-    const actionVariableButtons = view.getAllByRole("button", {
-      name: "Action Variable",
+    const variableButtons = view.getAllByRole("button", {
+      name: "Variable",
     });
 
-    await userEvent.click(actionVariableButtons[0]);
-    await userEvent.click(actionVariableButtons[1]);
+    await userEvent.click(variableButtons[0]);
+    await userEvent.click(variableButtons[1]);
 
     expect(currentDraft.variables.map((variable) => variable.name)).toEqual([
       "from",

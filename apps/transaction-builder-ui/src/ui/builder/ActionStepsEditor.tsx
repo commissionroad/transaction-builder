@@ -320,7 +320,7 @@ function BindingEditor({
               onClick={() => handleModeChange("actionVariable")}
               type="button"
             >
-              Action Variable
+              Variable
             </button>
             <button
               className={`daisy-btn daisy-join-item daisy-btn-xs ${

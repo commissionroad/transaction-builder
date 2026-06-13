@@ -105,7 +105,7 @@ export function ActionVariableForm({
         <div>
           <h2 className="text-lg font-semibold">Action Inputs</h2>
           <p className="mt-1 text-sm text-base-content/70">
-            These values fill the creator-selected Action Variables.
+            These values fill the creator-selected Variables.
           </p>
         </div>
 

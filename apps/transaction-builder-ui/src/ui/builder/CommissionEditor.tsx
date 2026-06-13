@@ -298,7 +298,7 @@ export function CommissionEditor({
             <label className="daisy-form-control">
               <span className="daisy-label pb-2">
                 <span className="daisy-label-text font-medium">
-                  Percentage of Action Variable
+                  Percentage of Variable
                 </span>
               </span>
               <select

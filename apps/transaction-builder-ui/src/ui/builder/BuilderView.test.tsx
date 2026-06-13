@@ -55,7 +55,7 @@ describe("BuilderView", () => {
     expect(view.getByLabelText("Action Chain")).toBeTruthy();
     expect(view.getByLabelText("Action name")).toBeTruthy();
     expect(view.getByLabelText("Description")).toBeTruthy();
-    expect(view.getByText("Call Tree")).toBeTruthy();
+    expect(view.getByText("Action Preview")).toBeTruthy();
     expect(view.getByText("Contract calls will appear here.")).toBeTruthy();
     expect(view.queryByLabelText("Contract address")).toBeNull();
 

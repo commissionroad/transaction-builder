@@ -36,7 +36,7 @@ const stages: Array<{
   {
     id: "steps",
     label: "Flow",
-    description: "Contract calls, read steps, and Action Variables.",
+    description: "Contract calls, read steps, and Variables.",
   },
   {
     id: "commission",
@@ -69,64 +69,46 @@ export function BuilderView({
   const previousStage = stages[currentIndex - 1]?.id;
 
   return (
-    <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-8">
-      <header className="grid gap-2">
-        <p className="text-sm font-medium uppercase tracking-wide text-secondary">
-          Action Builder
-        </p>
-        <h1 className="text-3xl font-semibold text-neutral md:text-4xl">
-          Build a shareable CommissionRoad Action
-        </h1>
-        <p className="max-w-3xl text-sm text-base-content/70">
-          Define the Action, build the contract call flow, configure the
-          commission, then publish a `/t/` share link.
-        </p>
-      </header>
+    <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6">
+      <StageStepper draft={draft} setStage={setStage} stage={stage} />
 
-      <section className="rounded-lg border border-base-300 bg-base-100 shadow-sm">
-        <div className="border-b border-base-300 px-5 py-4">
-          <StageStepper draft={draft} setStage={setStage} stage={stage} />
-        </div>
-        {stage !== "basics" ? (
-          <CompactActionReceipt
+      {stage !== "basics" ? (
+        <CompactActionReceipt draft={draft} onEdit={() => setStage("basics")} />
+      ) : null}
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0">
+          <StageWorkSurface
+            allowlistStatus={allowlistStatus}
             draft={draft}
-            onEdit={() => setStage("basics")}
+            hasActionSteps={hasActionSteps}
+            onChange={setDraft}
+            stage={stage}
           />
-        ) : null}
-        <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="min-w-0">
-            <StageWorkSurface
-              allowlistStatus={allowlistStatus}
-              draft={draft}
-              hasActionSteps={hasActionSteps}
-              onChange={setDraft}
-              stage={stage}
-            />
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-base-300 pt-4">
-              <button
-                className="daisy-btn daisy-btn-outline"
-                disabled={!previousStage}
-                onClick={() => previousStage && setStage(previousStage)}
-                type="button"
-              >
-                Back
-              </button>
-              <button
-                className="daisy-btn daisy-btn-secondary"
-                disabled={!nextStage}
-                onClick={() => nextStage && setStage(nextStage)}
-                type="button"
-              >
-                Continue
-                <ArrowRight className="size-4" />
-              </button>
-            </div>
+          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-base-300 pt-4">
+            <button
+              className="daisy-btn daisy-btn-outline"
+              disabled={!previousStage}
+              onClick={() => previousStage && setStage(previousStage)}
+              type="button"
+            >
+              Back
+            </button>
+            <button
+              className="daisy-btn daisy-btn-secondary"
+              disabled={!nextStage}
+              onClick={() => nextStage && setStage(nextStage)}
+              type="button"
+            >
+              Continue
+              <ArrowRight className="size-4" />
+            </button>
           </div>
-          <aside className="self-start lg:sticky lg:top-24">
-            <CompactCallTree draft={draft} />
-          </aside>
         </div>
-      </section>
+        <aside className="self-start lg:sticky lg:top-24">
+          <ActionPreview draft={draft} />
+        </aside>
+      </div>
     </main>
   );
 }
@@ -293,7 +275,7 @@ function CompactActionReceipt({
   const summary = getDraftSummary(draft);
 
   return (
-    <div className="grid gap-3 border-b border-base-300 bg-base-200 px-5 py-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+    <div className="grid gap-3 rounded-lg border border-base-300 bg-base-200 px-4 py-3 shadow-sm md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
       <div className="min-w-0">
         <div className="truncate font-semibold">
           {draft.title || "Untitled Action"}
@@ -311,7 +293,7 @@ function CompactActionReceipt({
   );
 }
 
-function CompactCallTree({ draft }: { draft: BuilderDraft }) {
+function ActionPreview({ draft }: { draft: BuilderDraft }) {
   const contractNodes = getContractCallTree(draft);
 
   return (
@@ -319,7 +301,7 @@ function CompactCallTree({ draft }: { draft: BuilderDraft }) {
       <div className="mb-3 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <GitBranch className="size-4 text-secondary" />
-          Call Tree
+          Action Preview
         </div>
         <div className="daisy-badge daisy-badge-outline">
           {draft.steps.length}
@@ -443,8 +425,8 @@ function getDraftSummary(draft: BuilderDraft): DraftSummary {
         : `${draft.steps.length} Action Steps`,
     variables:
       draft.variables.length === 1
-        ? "1 Action Variable"
-        : `${draft.variables.length} Action Variables`,
+        ? "1 Variable"
+        : `${draft.variables.length} Variables`,
   };
 }
 

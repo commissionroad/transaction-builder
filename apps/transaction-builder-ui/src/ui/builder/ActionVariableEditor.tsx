@@ -21,10 +21,10 @@ export function ActionVariableEditor({
     return (
       <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
         <div className="daisy-card-body gap-2">
-          <h2 className="text-lg font-semibold">Action Variables</h2>
+          <h2 className="text-lg font-semibold">Variables</h2>
           <p className="text-sm text-base-content/70">
-            Mark Contract Parameters or Call Value as dynamic to create Action
-            Variables for users.
+            Mark Contract Parameters or Call Value as variable to ask users for
+            those values.
           </p>
         </div>
       </section>
@@ -34,7 +34,7 @@ export function ActionVariableEditor({
   return (
     <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
       <div className="daisy-card-body gap-4">
-        <h2 className="text-lg font-semibold">Action Variables</h2>
+        <h2 className="text-lg font-semibold">Variables</h2>
         {draft.variables.map((variable) => (
           <div className="rounded-lg bg-base-200 p-3" key={variable.name}>
             <div className="mb-2 font-mono text-xs text-base-content/60">
