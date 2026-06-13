@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   FileJson,
   Loader2,
+  Plus,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +21,7 @@ export function ContractAddressInput({
   existingContracts,
   onCancel,
   onStepSelected,
+  quickActions = [],
   showCancel = true,
   stepNumber,
 }: {
@@ -30,6 +32,11 @@ export function ContractAddressInput({
     contract: ContractSnapshot,
     functionFragment: AbiFunctionFragment,
   ) => void;
+  quickActions?: Array<{
+    description: string;
+    label: string;
+    onSelect: () => void;
+  }>;
   showCancel?: boolean;
   stepNumber: number;
 }) {
@@ -182,6 +189,32 @@ export function ContractAddressInput({
         </label>
       </div>
 
+      {quickActions.length ? (
+        <div className="mt-3 border-t border-base-300 pt-3">
+          <div className="mb-2 text-xs font-medium uppercase tracking-wide text-base-content/50">
+            Common steps
+          </div>
+          <div className="grid gap-2">
+            {quickActions.map((action) => (
+              <button
+                className="daisy-btn daisy-btn-outline h-auto min-h-14 justify-start py-2"
+                key={action.label}
+                onClick={action.onSelect}
+                type="button"
+              >
+                <Plus className="size-4" />
+                <span className="grid text-left">
+                  <span>{action.label}</span>
+                  <span className="text-xs font-normal opacity-60">
+                    {action.description}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       {addressText && !address ? (
         <p className="mt-2 text-sm text-base-content/60">
           Enter a full 0x contract address to resolve its ABI.
@@ -223,42 +256,46 @@ export function ContractAddressInput({
         </div>
       ) : null}
 
-      <details
-        className="mt-4 rounded-lg border border-base-300 bg-base-200"
-        onToggle={(event) => setIsManualOpen(event.currentTarget.open)}
-        open={isManualOpen}
-      >
-        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
-          <span className="inline-flex items-center gap-2">
-            <FileJson className="size-4" />
-            Paste ABI manually
-          </span>
-        </summary>
-        <div className="border-t border-base-300 p-4 pt-3">
-          <label className="daisy-form-control">
-            <span className="daisy-label pb-2">
-              <span className="daisy-label-text font-medium">Manual ABI</span>
+      {address ? (
+        <details
+          className="mt-4 rounded-lg border border-base-300 bg-base-200"
+          onToggle={(event) => setIsManualOpen(event.currentTarget.open)}
+          open={isManualOpen}
+        >
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
+            <span className="inline-flex items-center gap-2">
+              <FileJson className="size-4" />
+              Paste ABI manually
             </span>
-            <textarea
-              className="daisy-textarea daisy-textarea-bordered min-h-28 w-full font-mono text-xs"
-              placeholder='[{"type":"function","name":"submit",...}]'
-              value={manualAbiText}
-              onChange={(event) => setManualAbiText(event.target.value)}
-            />
-          </label>
-          {manualAbiError ? (
-            <p className="mt-2 text-sm text-error">{manualAbiError}</p>
-          ) : null}
-          <button
-            className="daisy-btn daisy-btn-outline mt-3"
-            disabled={!address || !manualAbiText.trim()}
-            onClick={handleUseManualAbi}
-            type="button"
-          >
-            Load Manual ABI
-          </button>
-        </div>
-      </details>
+          </summary>
+          <div className="border-t border-base-300 p-4 pt-3">
+            <label className="daisy-form-control">
+              <span className="daisy-label pb-2">
+                <span className="daisy-label-text font-medium">
+                  Manual ABI
+                </span>
+              </span>
+              <textarea
+                className="daisy-textarea daisy-textarea-bordered min-h-28 w-full font-mono text-xs"
+                placeholder='[{"type":"function","name":"submit",...}]'
+                value={manualAbiText}
+                onChange={(event) => setManualAbiText(event.target.value)}
+              />
+            </label>
+            {manualAbiError ? (
+              <p className="mt-2 text-sm text-error">{manualAbiError}</p>
+            ) : null}
+            <button
+              className="daisy-btn daisy-btn-outline mt-3"
+              disabled={!address || !manualAbiText.trim()}
+              onClick={handleUseManualAbi}
+              type="button"
+            >
+              Load Manual ABI
+            </button>
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }

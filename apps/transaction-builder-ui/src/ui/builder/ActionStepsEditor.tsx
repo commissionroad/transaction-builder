@@ -10,7 +10,7 @@ import {
   commissionRoadAbi,
   getCommissionRoadAddresses,
 } from "@transaction-builder/commissionroad-protocol";
-import { Plus, Trash2 } from "lucide-react";
+import { Check, Copy, Plus, Trash2 } from "lucide-react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { AbiFunctionFragment, BuilderDraft } from "./builderState";
 import {
@@ -100,6 +100,7 @@ export function ActionStepsEditor({
 
   const addSweepStep = () => {
     onChange(addCommissionRoadSweepStep);
+    setIsAddingStep(false);
   };
 
   return (
@@ -126,14 +127,21 @@ export function ActionStepsEditor({
           chainId={draft.chainId}
           existingContracts={draft.contracts}
           onCancel={() => setIsAddingStep(false)}
+          quickActions={[
+            {
+              description:
+                "Use CommissionRoad sweepERC20 without pasting its contract.",
+              label: "Sweep ERC20",
+              onSelect: addSweepStep,
+            },
+          ]}
           onStepSelected={addStep}
           stepNumber={draft.steps.length + 1}
           showCancel={draft.steps.length > 0}
         />
       ) : (
         <StepCreationActions
-          onAddContractCall={() => setIsAddingStep(true)}
-          onAddSweepErc20={addSweepStep}
+          onAddActionStep={() => setIsAddingStep(true)}
         />
       )}
     </div>
@@ -141,31 +149,19 @@ export function ActionStepsEditor({
 }
 
 function StepCreationActions({
-  onAddContractCall,
-  onAddSweepErc20,
+  onAddActionStep,
 }: {
-  onAddContractCall: () => void;
-  onAddSweepErc20: () => void;
+  onAddActionStep: () => void;
 }) {
   return (
-    <div className="grid gap-2 rounded-lg border border-dashed border-base-300 bg-base-100 p-3 sm:grid-cols-2">
-      <button
-        className="daisy-btn daisy-btn-outline justify-start"
-        onClick={onAddContractCall}
-        type="button"
-      >
-        <Plus className="size-4" />
-        Add Contract Call
-      </button>
-      <button
-        className="daisy-btn daisy-btn-outline justify-start"
-        onClick={onAddSweepErc20}
-        type="button"
-      >
-        <Plus className="size-4" />
-        Sweep ERC20
-      </button>
-    </div>
+    <button
+      className="daisy-btn daisy-btn-outline w-full justify-start"
+      onClick={onAddActionStep}
+      type="button"
+    >
+      <Plus className="size-4" />
+      Add Action Step
+    </button>
   );
 }
 
@@ -188,6 +184,13 @@ function StepEditor({
     (candidate) => candidate.id === step.contractId,
   );
   const contractLabel = getContractDisplayName(contract, step.target);
+  const [copiedAddress, setCopiedAddress] = useState(false);
+
+  const copyContractAddress = async () => {
+    await navigator.clipboard.writeText(step.target);
+    setCopiedAddress(true);
+    setTimeout(() => setCopiedAddress(false), 1200);
+  };
 
   return (
     <div className="rounded-lg border border-base-300 bg-base-100 p-4">
@@ -200,6 +203,20 @@ function StepEditor({
             <span className="font-semibold">{contractLabel}</span>
             <span className="font-mono text-xs text-base-content/50">
               {formatShortAddress(step.target)}
+            </span>
+            <span className="daisy-tooltip" data-tip="Copy address">
+              <button
+                aria-label={`Copy ${contractLabel} contract address`}
+                className="daisy-btn daisy-btn-ghost daisy-btn-xs min-h-6 px-1"
+                onClick={copyContractAddress}
+                type="button"
+              >
+                {copiedAddress ? (
+                  <Check className="size-3.5 text-success" />
+                ) : (
+                  <Copy className="size-3.5" />
+                )}
+              </button>
             </span>
           </div>
           <div className="mt-1 break-all font-mono text-sm font-semibold">

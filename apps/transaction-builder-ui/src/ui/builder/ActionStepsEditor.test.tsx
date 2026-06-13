@@ -4,7 +4,7 @@ import { getCommissionRoadAddresses } from "@transaction-builder/commissionroad-
 import type { ActionDefinitionV1, Address } from "@transaction-builder/domain";
 import { cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it } from "bun:test";
+import { afterEach, describe, expect, it, mock } from "bun:test";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { renderWithQueryClient } from "src/testing/render";
 import { ActionStepsEditor } from "./ActionStepsEditor";
@@ -221,6 +221,30 @@ describe("ActionStepsEditor", () => {
     ]);
   });
 
+  it("copies full contract addresses from Action Step headers", async () => {
+    const clipboardWrite = mock(async (_value: string) => undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: clipboardWrite },
+    });
+
+    const view = renderWithQueryClient(
+      <DraftHarness draft={createStepOutputDraft()} />,
+    );
+
+    const copyButton = view.getAllByRole("button", {
+      name: /Copy MockToken contract address/i,
+    })[0];
+
+    if (!copyButton) {
+      throw new Error("Expected contract address copy button to render.");
+    }
+
+    await userEvent.click(copyButton);
+
+    expect(clipboardWrite).toHaveBeenCalledWith(TOKEN_ADDRESS);
+  });
+
   it("adds the CommissionRoad ERC20 sweep helper as a first-class Action Step", async () => {
     let currentDraft = createStepOutputDraft();
     const view = renderWithQueryClient(
@@ -232,6 +256,9 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
+    await userEvent.click(
+      view.getByRole("button", { name: /Add Action Step/i }),
+    );
     await userEvent.click(view.getByRole("button", { name: /Sweep ERC20/i }));
 
     const commissionRoadAddress = getCommissionRoadAddresses(1).commissionRoad;

@@ -3,8 +3,14 @@ import {
   getChainConfig,
 } from "@transaction-builder/commissionroad-protocol";
 import { validateDraft } from "@transaction-builder/domain";
-import { ArrowRight, Check, GitBranch } from "lucide-react";
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { ArrowRight, Check, GitBranch, Info } from "lucide-react";
+import {
+  useMemo,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
 import { AllowlistNotice } from "src/ui/allowlist/AllowlistNotice";
 import {
   useAllowlistStatus,
@@ -101,8 +107,17 @@ export function BuilderView({
             </button>
           </div>
         </div>
-        <aside className="self-start lg:sticky lg:top-24">
-          <PreviewCard draft={draft} />
+        <aside className="grid gap-5 self-start lg:sticky lg:top-24">
+          {draft.variables.length ? (
+            <section className="grid gap-2">
+              <SidebarSectionHeader
+                info="Variables are values the person using your share link fills in before executing the Action."
+                title="Variables"
+              />
+              <ActionVariableEditor draft={draft} onChange={setDraft} />
+            </section>
+          ) : null}
+          <PreviewSection draft={draft} />
         </aside>
       </div>
     </main>
@@ -130,9 +145,6 @@ function StageWorkSurface({
     return (
       <div className="grid gap-5">
         <ActionStepsEditor draft={draft} onChange={onChange} />
-        {draft.variables.length ? (
-          <ActionVariableEditor draft={draft} onChange={onChange} />
-        ) : null}
       </div>
     );
   }
@@ -261,22 +273,53 @@ function StageStepper({
   );
 }
 
+function PreviewSection({ draft }: { draft: BuilderDraft }) {
+  return (
+    <section className="grid gap-2">
+      <SidebarSectionHeader
+        icon={<GitBranch className="size-4 text-secondary" />}
+        title="Preview"
+      />
+      <PreviewCard draft={draft} />
+    </section>
+  );
+}
+
+function SidebarSectionHeader({
+  icon,
+  info,
+  title,
+}: {
+  icon?: ReactNode;
+  info?: string;
+  title: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h3 className="flex items-center gap-2 text-lg font-semibold">
+        {icon}
+        {title}
+      </h3>
+      {info ? (
+        <span
+          aria-label={info}
+          className="daisy-tooltip daisy-tooltip-left"
+          data-tip={info}
+          tabIndex={0}
+        >
+          <Info className="size-4 text-base-content/50" />
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 function PreviewCard({ draft }: { draft: BuilderDraft }) {
   const summary = getDraftSummary(draft);
   const previewSteps = getActionPreviewSteps(draft);
 
   return (
     <section className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm font-semibold">
-          <GitBranch className="size-4 text-secondary" />
-          Preview
-        </div>
-        <div className="daisy-badge daisy-badge-outline">
-          {draft.steps.length}
-        </div>
-      </div>
-
       <div className="border-b border-base-300 pb-3">
         <div className="truncate text-lg font-semibold">
           {draft.title || "Untitled Action"}
