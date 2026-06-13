@@ -163,12 +163,9 @@ describe("ActionStepsEditor", () => {
     const stepOutputButtons = view.getAllByRole("button", {
       name: "Step Output",
     }) as HTMLButtonElement[];
-    const enabledStepOutputButton = stepOutputButtons.find(
-      (button) => !button.disabled,
-    );
-    expect(enabledStepOutputButton).toBeTruthy();
+    expect(stepOutputButtons).toHaveLength(1);
 
-    await userEvent.click(enabledStepOutputButton as HTMLButtonElement);
+    await userEvent.click(stepOutputButtons[0]);
 
     expect(
       view.getByRole("option", {
@@ -187,11 +184,11 @@ describe("ActionStepsEditor", () => {
       <DraftHarness draft={createStepOutputDraft({ readFirst: false })} />,
     );
 
-    const stepOutputButtons = view.getAllByRole("button", {
+    const stepOutputButtons = view.queryAllByRole("button", {
       name: "Step Output",
-    }) as HTMLButtonElement[];
+    });
 
-    expect(stepOutputButtons.every((button) => button.disabled)).toBe(true);
+    expect(stepOutputButtons).toHaveLength(0);
   });
 
   it("creates distinct Variables for separate fixed parameters", async () => {

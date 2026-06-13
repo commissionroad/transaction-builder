@@ -265,6 +265,8 @@ function BindingEditor({
   variables: ActionVariable[];
 }) {
   const currentBinding = binding ?? { kind: "fixed", value: "" };
+  const shouldShowStepOutputMode =
+    stepOutputs.length > 0 || currentBinding.kind === "stepOutput";
 
   const handleModeChange = (mode: ContractParameterBinding["kind"]): void => {
     if (mode === "fixed") {
@@ -322,16 +324,18 @@ function BindingEditor({
             >
               Variable
             </button>
-            <button
-              className={`daisy-btn daisy-join-item daisy-btn-xs ${
-                currentBinding.kind === "stepOutput" ? "daisy-btn-active" : ""
-              }`}
-              disabled={!stepOutputs.length}
-              onClick={() => handleModeChange("stepOutput")}
-              type="button"
-            >
-              Step Output
-            </button>
+            {shouldShowStepOutputMode ? (
+              <button
+                className={`daisy-btn daisy-join-item daisy-btn-xs ${
+                  currentBinding.kind === "stepOutput" ? "daisy-btn-active" : ""
+                }`}
+                disabled={!stepOutputs.length}
+                onClick={() => handleModeChange("stepOutput")}
+                type="button"
+              >
+                Step Output
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -363,27 +367,34 @@ function BindingEditor({
             </button>
           </div>
         ) : currentBinding.kind === "stepOutput" ? (
-          <select
-            className="daisy-select daisy-select-bordered mt-2 w-full"
-            value={`${currentBinding.stepId}:${currentBinding.outputIndex}`}
-            onChange={(event) => {
-              const [stepId, outputIndex] = event.target.value.split(":");
-              onChange({
-                kind: "stepOutput",
-                stepId,
-                outputIndex: Number(outputIndex),
-              });
-            }}
-          >
-            {stepOutputs.map((output) => (
-              <option
-                key={`${output.stepId}-${output.outputIndex}`}
-                value={`${output.stepId}:${output.outputIndex}`}
-              >
-                {output.stepLabel} · {output.name} ({output.type})
-              </option>
-            ))}
-          </select>
+          stepOutputs.length ? (
+            <select
+              className="daisy-select daisy-select-bordered mt-2 w-full"
+              value={`${currentBinding.stepId}:${currentBinding.outputIndex}`}
+              onChange={(event) => {
+                const [stepId, outputIndex] = event.target.value.split(":");
+                onChange({
+                  kind: "stepOutput",
+                  stepId,
+                  outputIndex: Number(outputIndex),
+                });
+              }}
+            >
+              {stepOutputs.map((output) => (
+                <option
+                  key={`${output.stepId}-${output.outputIndex}`}
+                  value={`${output.stepId}:${output.outputIndex}`}
+                >
+                  {output.stepLabel} · {output.name} ({output.type})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="mt-2 rounded-lg border border-warning/40 bg-warning/10 p-3 text-xs text-base-content/70">
+              No compatible earlier Step Output is available. Choose Fixed or
+              Variable instead.
+            </div>
+          )
         ) : (
           <input
             className="daisy-input daisy-input-bordered mt-2 w-full font-mono text-sm"
