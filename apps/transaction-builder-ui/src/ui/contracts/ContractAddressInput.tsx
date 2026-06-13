@@ -23,7 +23,6 @@ export function ContractAddressInput({
   onStepSelected,
   quickActions = [],
   showCancel = true,
-  stepNumber,
 }: {
   chainId: BuilderDraft["chainId"];
   existingContracts: ContractSnapshot[];
@@ -38,7 +37,6 @@ export function ContractAddressInput({
     onSelect: () => void;
   }>;
   showCancel?: boolean;
-  stepNumber: number;
 }) {
   const [addressText, setAddressText] = useState("");
   const [manualContract, setManualContract] = useState<ContractSnapshot | null>(
@@ -138,12 +136,7 @@ export function ContractAddressInput({
     <div className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <span className="daisy-badge daisy-badge-secondary daisy-badge-outline">
-              Step {stepNumber}
-            </span>
-            <h3 className="font-semibold">Add Action Step</h3>
-          </div>
+          <h3 className="mb-1 font-semibold">Add Action Step</h3>
           <p className="text-sm text-base-content/70">
             Paste a contract address. Methods appear as soon as the ABI is
             ready.
@@ -271,9 +264,7 @@ export function ContractAddressInput({
           <div className="border-t border-base-300 p-4 pt-3">
             <label className="daisy-form-control">
               <span className="daisy-label pb-2">
-                <span className="daisy-label-text font-medium">
-                  Manual ABI
-                </span>
+                <span className="daisy-label-text font-medium">Manual ABI</span>
               </span>
               <textarea
                 className="daisy-textarea daisy-textarea-bordered min-h-28 w-full font-mono text-xs"

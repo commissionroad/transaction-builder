@@ -48,7 +48,8 @@ describe("ActionStepsEditor", () => {
       view.getByRole("button", { name: /balanceOf\(address\)/i }),
     );
 
-    expect(view.getByText("Flow")).toBeTruthy();
+    expect(view.getAllByText("Step 1").length).toBeGreaterThan(0);
+    expect(view.getByText("Add")).toBeTruthy();
     expect(view.getByText("MockToken")).toBeTruthy();
     expect(view.getByText("balanceOf(address)")).toBeTruthy();
     expect(view.getByText("Step Outputs")).toBeTruthy();

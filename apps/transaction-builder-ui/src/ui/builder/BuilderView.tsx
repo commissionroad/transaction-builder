@@ -3,7 +3,8 @@ import {
   getChainConfig,
 } from "@transaction-builder/commissionroad-protocol";
 import { validateDraft } from "@transaction-builder/domain";
-import { ArrowRight, Check, GitBranch, Info } from "lucide-react";
+import classNames from "classnames";
+import { ArrowRight, Check, ChevronDown, GitBranch, Info } from "lucide-react";
 import {
   useMemo,
   useState,
@@ -177,32 +178,7 @@ function BasicsEditor({
   return (
     <div className="grid gap-4">
       <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
-        <label className="daisy-form-control">
-          <span className="daisy-label pb-2">
-            <span className="daisy-label-text font-medium">Chain</span>
-          </span>
-          <select
-            aria-label="Chain"
-            className="daisy-select daisy-select-bordered w-full"
-            value={draft.chainId}
-            onChange={(event) =>
-              onChange({
-                ...draft,
-                chainId: Number(event.target.value) as BuilderDraft["chainId"],
-                commissionRoadNftId: undefined,
-              })
-            }
-          >
-            {SUPPORTED_CHAIN_IDS.map((chainId) => {
-              const chain = getChainConfig(chainId);
-              return (
-                <option key={chainId} value={chainId}>
-                  {chain.displayName}
-                </option>
-              );
-            })}
-          </select>
-        </label>
+        <ChainPicker draft={draft} onChange={onChange} />
 
         <label className="daisy-form-control">
           <span className="daisy-label pb-2">
@@ -238,6 +214,82 @@ function BasicsEditor({
   );
 }
 
+function ChainPicker({
+  draft,
+  onChange,
+}: {
+  draft: BuilderDraft;
+  onChange: (draft: BuilderDraft) => void;
+}) {
+  const selectedChain = getChainConfig(draft.chainId);
+
+  return (
+    <div className="daisy-form-control">
+      <label className="daisy-label pb-2" id="chain-picker-label">
+        <span className="daisy-label-text font-medium">Chain</span>
+      </label>
+      <details className="daisy-dropdown w-full">
+        <summary
+          aria-labelledby="chain-picker-label chain-picker-value"
+          className="flex h-10 w-full cursor-pointer list-none items-center justify-between gap-3 rounded-md border border-base-300 bg-base-100 px-3 text-base font-normal text-base-content transition hover:border-base-content/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-secondary [&::-webkit-details-marker]:hidden"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <ChainLogo chainId={draft.chainId} />
+            <span className="truncate" id="chain-picker-value">
+              {selectedChain.displayName}
+            </span>
+          </span>
+          <ChevronDown className="size-4 shrink-0" aria-hidden="true" />
+        </summary>
+        <ul className="daisy-menu daisy-dropdown-content z-20 mt-2 w-full rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+          {SUPPORTED_CHAIN_IDS.map((chainId) => {
+            const chain = getChainConfig(chainId);
+            const isSelected = chainId === draft.chainId;
+
+            return (
+              <li key={chainId}>
+                <button
+                  className="grid grid-cols-[1.5rem_minmax(0,1fr)_1rem] items-center gap-3"
+                  onClick={(event) => {
+                    event.currentTarget
+                      .closest("details")
+                      ?.removeAttribute("open");
+                    onChange({
+                      ...draft,
+                      chainId,
+                      commissionRoadNftId: undefined,
+                    });
+                  }}
+                  type="button"
+                >
+                  <ChainLogo chainId={chainId} />
+                  <span className="truncate text-left">
+                    {chain.displayName}
+                  </span>
+                  {isSelected ? (
+                    <Check className="size-4 text-secondary" />
+                  ) : null}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </details>
+    </div>
+  );
+}
+
+function ChainLogo({ chainId }: { chainId: BuilderDraft["chainId"] }) {
+  return (
+    <img
+      alt=""
+      aria-hidden="true"
+      className="size-6 rounded-full"
+      src={getChainLogoSrc(chainId)}
+    />
+  );
+}
+
 function StageStepper({
   draft,
   setStage,
@@ -247,29 +299,87 @@ function StageStepper({
   setStage: (stage: StageId) => void;
   stage: StageId;
 }) {
+  const currentIndex = getStageIndex(stage);
+
   return (
-    <div className="grid gap-3 lg:grid-cols-4">
-      {stages.map((candidate) => (
-        <button
-          className={`rounded-lg border p-3 text-left transition ${
-            candidate.id === stage
-              ? "border-secondary bg-secondary text-secondary-content"
-              : "border-base-300 bg-base-100 hover:border-secondary"
-          }`}
-          key={candidate.id}
-          onClick={() => setStage(candidate.id)}
-          type="button"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold">{candidate.label}</span>
-            {isStageComplete(candidate.id, draft) ? (
-              <Check className="size-4" />
-            ) : null}
-          </div>
-          <div className="mt-1 text-xs opacity-70">{candidate.description}</div>
-        </button>
-      ))}
-    </div>
+    <nav aria-label="Build steps" className="w-full overflow-x-auto pb-1">
+      <ol className="flex min-w-[34rem] items-start">
+        {stages.flatMap((candidate, index) => {
+          const stepNumber = index + 1;
+          const isActive = candidate.id === stage;
+          const isCompleted = isStageComplete(candidate.id, draft);
+
+          const step = (
+            <li
+              className="flex min-w-[6rem] flex-col items-center"
+              key={candidate.id}
+            >
+              <button
+                aria-current={isActive ? "step" : undefined}
+                aria-label={`${candidate.label}: ${candidate.description}`}
+                className="group flex flex-col items-center text-center"
+                onClick={() => setStage(candidate.id)}
+                type="button"
+              >
+                <span
+                  className={classNames(
+                    "flex size-8 items-center justify-center rounded-full border-2 transition-colors",
+                    {
+                      "border-primary bg-primary text-primary-content":
+                        isActive || isCompleted,
+                      "border-base-300 bg-base-100 text-base-content/40 group-hover:border-primary group-hover:text-primary":
+                        !isActive && !isCompleted,
+                    },
+                  )}
+                  data-active={isActive ? "true" : undefined}
+                  data-completed={isCompleted ? "true" : undefined}
+                  data-step={stepNumber}
+                >
+                  {isCompleted && !isActive ? (
+                    <Check className="size-4 stroke-[3]" aria-hidden="true" />
+                  ) : (
+                    <span className="text-xs font-bold">{stepNumber}</span>
+                  )}
+                </span>
+                <span
+                  className={classNames(
+                    "mt-1 whitespace-nowrap text-xs font-semibold transition-opacity",
+                    {
+                      "text-base-content": isActive || isCompleted,
+                      "text-base-content/40 group-hover:text-base-content/70":
+                        !isActive && !isCompleted,
+                    },
+                  )}
+                >
+                  {candidate.label}
+                </span>
+              </button>
+            </li>
+          );
+
+          if (index >= stages.length - 1) {
+            return [step];
+          }
+
+          const line = (
+            <li
+              aria-hidden="true"
+              className="relative mt-4 h-0.5 flex-1 overflow-hidden bg-base-300"
+              key={`${candidate.id}-line`}
+            >
+              <span
+                className={classNames(
+                  "absolute inset-y-0 left-0 bg-primary transition-all duration-300",
+                  currentIndex > index || isCompleted ? "w-full" : "w-0",
+                )}
+              />
+            </li>
+          );
+
+          return [step, line];
+        })}
+      </ol>
+    </nav>
   );
 }
 
@@ -432,15 +542,24 @@ function getDraftSummary(draft: BuilderDraft): DraftSummary {
   return {
     chain,
     commission,
-    steps:
-      draft.steps.length === 1
-        ? "1 Action Step"
-        : `${draft.steps.length} Action Steps`,
+    steps: draft.steps.length === 1 ? "1 Step" : `${draft.steps.length} Steps`,
     variables:
       draft.variables.length === 1
         ? "1 Variable"
         : `${draft.variables.length} Variables`,
   };
+}
+
+function getChainLogoSrc(chainId: BuilderDraft["chainId"]): string {
+  if (chainId === 8453) {
+    return "/base.svg";
+  }
+
+  if (chainId === 11155111) {
+    return "/sepolia.svg";
+  }
+
+  return "/ethereum.svg";
 }
 
 function getActionPreviewSteps(draft: BuilderDraft): ActionPreviewStep[] {
