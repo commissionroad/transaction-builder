@@ -75,7 +75,7 @@ export function BuilderView({
   const nextStage = stages[currentIndex + 1]?.id;
   const previousStage = stages[currentIndex - 1]?.id;
   const variableEditorMode =
-    currentIndex >= getStageIndex("commission") ? "accordion" : "expanded";
+    currentIndex >= getStageIndex("steps") ? "accordion" : "expanded";
 
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6">

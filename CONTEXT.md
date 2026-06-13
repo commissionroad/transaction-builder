@@ -73,7 +73,7 @@ A deterministic, non-AI explanation of a Published Action produced from its Acti
 _Avoid_: AI summary
 
 **Action Variable**:
-A named placeholder supplied when someone carries out an Action. Action Variables can be reused across contract parameters, call values, and commission formulas, and may have creator-authored display labels that help users understand them.
+A named placeholder supplied when someone carries out an Action. Action Variables can be reused across contract parameters, Eth Value, and commission formulas, and may have creator-authored display labels that help users understand them.
 _Avoid_: Dynamic field, action input
 
 **Action Step**:
@@ -93,11 +93,11 @@ A value produced by an Action Step that can be used by a later Action Step. Usin
 _Avoid_: Weiroll state slot
 
 **Contract Parameter**:
-A value passed into a contract method or call value slot as part of an Action. A Contract Parameter can be fixed by the Action creator or filled from an Action Variable.
+A value passed into a contract method or Eth Value slot as part of an Action. A Contract Parameter can be fixed by the Action creator or filled from an Action Variable.
 _Avoid_: Action input
 
-**Call Value**:
-The ETH amount sent with an Action Step. Call Value is separate from method arguments and can be fixed or filled from an Action Variable.
+**Eth Value**:
+The ETH amount sent with an Action Step. Eth Value is separate from method arguments and can be fixed or filled from an Action Variable.
 _Avoid_: Payable parameter
 
 **Contract Label**:

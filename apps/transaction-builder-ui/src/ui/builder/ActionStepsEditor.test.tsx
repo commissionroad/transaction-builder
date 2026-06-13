@@ -229,6 +229,34 @@ describe("ActionStepsEditor", () => {
     ]);
   });
 
+  it("uses Eth Value as the default label for payable method value", async () => {
+    let currentDraft = createPayableValueDraft();
+    const view = renderWithQueryClient(
+      <DraftHarness
+        draft={currentDraft}
+        onDraftChange={(draft) => {
+          currentDraft = draft;
+        }}
+      />,
+    );
+
+    expect(view.getByText(/Eth Value/)).toBeTruthy();
+    expect(view.queryByText(/Call Value/)).toBeNull();
+
+    await userEvent.click(view.getByRole("button", { name: "Variable" }));
+
+    expect(currentDraft.variables[0]).toMatchObject({
+      label: "Eth Value",
+      name: "depositValue",
+      type: "uint256",
+      unit: { kind: "eth", symbol: "ETH", decimals: 18 },
+    });
+    expect(currentDraft.steps[0]?.callValue).toEqual({
+      kind: "actionVariable",
+      name: "depositValue",
+    });
+  });
+
   it("deletes Variables that are no longer used after an Action Step is removed", async () => {
     let currentDraft = createTwoAddressParameterDraft();
     const view = renderWithQueryClient(
@@ -509,6 +537,52 @@ function createTwoAddressParameterDraft(): ActionDefinitionV1 {
             value: "0x0000000000000000000000000000000000000000",
           },
         ],
+      },
+    ],
+    commissionToken: { kind: "eth" },
+    commissionFormula: { kind: "flat", amount: "0.01" },
+  };
+}
+
+function createPayableValueDraft(): ActionDefinitionV1 {
+  return {
+    schemaVersion: 1,
+    title: "Deposit ETH",
+    description: "Test draft.",
+    chainId: 1,
+    commissionRoadNftId: "1",
+    contracts: [
+      {
+        id: "vault",
+        chainId: 1,
+        address: TOKEN_ADDRESS,
+        labels: { verified: "MockVault" },
+        abi: [
+          {
+            type: "function",
+            name: "deposit",
+            stateMutability: "payable",
+            inputs: [],
+            outputs: [],
+          },
+        ],
+        abiSource: { kind: "manual" },
+      },
+    ],
+    variables: [],
+    steps: [
+      {
+        id: "deposit",
+        kind: "write",
+        contractId: "vault",
+        target: TOKEN_ADDRESS,
+        functionName: "deposit",
+        functionSignature: "deposit()",
+        stateMutability: "payable",
+        inputs: [],
+        outputs: [],
+        parameters: [],
+        callValue: { kind: "fixed", value: "0" },
       },
     ],
     commissionToken: { kind: "eth" },

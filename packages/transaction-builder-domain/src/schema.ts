@@ -306,7 +306,7 @@ function getSemanticIssues(definition: ActionDefinitionV1): ValidationIssue[] {
         issues.push({
           path: `steps.${stepIndex}.callValue`,
           message:
-            "Call Value cannot use a Step Output because ETH value must be known before execution",
+            "Eth Value cannot use a Step Output because ETH value must be known before execution",
         });
       }
 

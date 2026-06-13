@@ -117,7 +117,7 @@ describe("validateDraft", () => {
     );
   });
 
-  it("rejects Step Output bindings for Call Value", () => {
+  it("rejects Step Output bindings for Eth Value", () => {
     const action = createDependentAction();
     const result = validateDraft({
       ...action,
@@ -137,7 +137,7 @@ describe("validateDraft", () => {
 
     expect(result.success).toBe(false);
     expect(getIssueMessages(result)).toContain(
-      "Call Value cannot use a Step Output because ETH value must be known before execution",
+      "Eth Value cannot use a Step Output because ETH value must be known before execution",
     );
   });
 

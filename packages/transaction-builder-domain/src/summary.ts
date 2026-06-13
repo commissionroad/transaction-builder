@@ -72,7 +72,7 @@ function formatStep({
   const abiSource =
     contract?.abiSource.kind === "manual" ? " [Manual ABI]" : "";
   const callValue = step.callValue
-    ? ` with Call Value ${formatBinding(step.callValue)}`
+    ? ` with Eth Value ${formatBinding(step.callValue)}`
     : "";
   const parameters = parameterSummary ? `(${parameterSummary})` : "()";
 

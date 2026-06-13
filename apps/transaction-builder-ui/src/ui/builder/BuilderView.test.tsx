@@ -97,7 +97,7 @@ describe("BuilderView", () => {
     ).toBeTruthy();
   });
 
-  it("collapses Variables into a single-open accordion on the Commission stage", async () => {
+  it("collapses Variables into a single-open accordion on the Flow stage", async () => {
     const view = renderBuilder(
       <BuilderView initialDraft={createDraftWithTwoVariables()} />,
     );
@@ -105,7 +105,7 @@ describe("BuilderView", () => {
     expect(view.getByDisplayValue("Recipient")).toBeTruthy();
     expect(view.getByDisplayValue("Amount")).toBeTruthy();
 
-    await userEvent.click(view.getByRole("button", { name: /Commission/i }));
+    await userEvent.click(view.getByRole("button", { name: /Flow/i }));
 
     expect(view.queryByDisplayValue("Recipient")).toBeNull();
     expect(view.queryByDisplayValue("Amount")).toBeNull();
@@ -119,6 +119,26 @@ describe("BuilderView", () => {
 
     expect(view.queryByDisplayValue("Recipient")).toBeNull();
     expect(view.getByDisplayValue("Amount")).toBeTruthy();
+  });
+
+  it("adds new Flow Variables collapsed and lets creators expand them", async () => {
+    const view = renderBuilder(
+      <BuilderView initialDraft={createDraftWithFixedParameter()} />,
+    );
+
+    await userEvent.click(view.getByRole("button", { name: /Flow/i }));
+    await userEvent.click(view.getByRole("button", { name: "Variable" }));
+
+    expect(view.getByRole("heading", { name: "Variables" })).toBeTruthy();
+    const variableButton = view.getByRole("button", {
+      name: "To to · address",
+    });
+    expect(variableButton).toBeTruthy();
+    expect(view.queryByDisplayValue("To")).toBeNull();
+
+    await userEvent.click(variableButton);
+
+    expect(view.getByDisplayValue("To")).toBeTruthy();
   });
 });
 
@@ -197,6 +217,26 @@ function createDraftWithTwoVariables(): BuilderDraft {
         label: "Amount",
         type: "uint256",
         description: "Amount to transfer.",
+      },
+    ],
+  };
+}
+
+function createDraftWithFixedParameter(): BuilderDraft {
+  const draft = createDraftWithVariable();
+
+  return {
+    ...draft,
+    variables: [],
+    steps: [
+      {
+        ...draft.steps[0],
+        parameters: [
+          {
+            kind: "fixed",
+            value: "0x0000000000000000000000000000000000000000",
+          },
+        ],
       },
     ],
   };

@@ -47,7 +47,7 @@ describe("compile helpers", () => {
     expect(targets).toContain(permit2Target);
   });
 
-  it("discovers Call Value sources", () => {
+  it("discovers Eth Value sources", () => {
     expect(getCallValueBindings(createLidoSweepAction())).toEqual([
       {
         stepId: "submit",

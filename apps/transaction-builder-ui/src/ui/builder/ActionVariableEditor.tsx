@@ -39,8 +39,8 @@ export function ActionVariableEditor({
   if (!draft.variables.length) {
     return (
       <section className="rounded-lg border border-base-300 bg-base-100 p-3 text-sm text-base-content/70 shadow-sm">
-        Mark Contract Parameters or Call Value as variable to ask users for
-        those values.
+        Mark Contract Parameters or Eth Value as variable to ask users for those
+        values.
       </section>
     );
   }
