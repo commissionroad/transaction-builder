@@ -2,7 +2,10 @@ import {
   SUPPORTED_CHAIN_IDS,
   getChainConfig,
 } from "@transaction-builder/commissionroad-protocol";
+import { validateDraft } from "@transaction-builder/domain";
 import { useMemo, useState } from "react";
+import { AllowlistNotice } from "src/ui/allowlist/AllowlistNotice";
+import { useAllowlistStatus } from "src/ui/allowlist/useAllowlistStatus";
 import { ActionStepsEditor } from "./ActionStepsEditor";
 import { ActionVariableEditor } from "./ActionVariableEditor";
 import { CommissionEditor } from "./CommissionEditor";
@@ -22,7 +25,11 @@ export function BuilderView({
   const [draft, setDraft] = useState<BuilderDraft>(
     () => initialDraft ?? createInitialBuilderDraft(),
   );
+  const validation = useMemo(() => validateDraft(draft), [draft]);
   const hasActionSteps = useMemo(() => getDraftStepCount(draft) > 0, [draft]);
+  const allowlistStatus = useAllowlistStatus(
+    validation.success ? validation.definition : undefined,
+  );
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -139,7 +146,12 @@ export function BuilderView({
       <aside className="flex flex-col gap-4">
         <CommissionEditor draft={draft} onChange={setDraft} />
         <ActionVariableEditor draft={draft} onChange={setDraft} />
-        <ShareActionPanel draft={draft} hasActionSteps={hasActionSteps} />
+        <AllowlistNotice status={allowlistStatus} />
+        <ShareActionPanel
+          allowlistStatus={allowlistStatus}
+          draft={draft}
+          hasActionSteps={hasActionSteps}
+        />
       </aside>
     </main>
   );

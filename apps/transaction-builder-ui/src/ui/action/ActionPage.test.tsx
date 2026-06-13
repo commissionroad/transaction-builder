@@ -28,7 +28,13 @@ describe("ActionPage", () => {
       <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
         <QueryClientProvider client={new QueryClient()}>
           <RainbowKitProvider theme={commissionRoadTheme}>
-            <ActionPage slug="stake-lido-abc123" />
+            <ActionPage
+              allowlistStatusOverride={{
+                state: "allowlist-disabled",
+                blockedTargets: [],
+              }}
+              slug="stake-lido-abc123"
+            />
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>,
@@ -50,6 +56,36 @@ describe("ActionPage", () => {
     expect(view.getByLabelText("ETH to stake")).toBeTruthy();
     expect(view.getByLabelText("Recipient")).toBeTruthy();
     expect(view.getByRole("button", { name: "Execute" })).toBeTruthy();
+  });
+
+  it("shows an allowlist warning and disables execution when action targets are blocked", async () => {
+    globalThis.fetch = mock(async () =>
+      jsonResponse(createPublishedActionResponse()),
+    ) as unknown as typeof fetch;
+
+    const view = render(
+      <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider theme={commissionRoadTheme}>
+            <ActionPage
+              allowlistStatusOverride={{
+                state: "blocked",
+                blockedTargets: ["0x1111111111111111111111111111111111111111"],
+              }}
+              slug="stake-lido-abc123"
+            />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
+
+    await waitFor(() =>
+      expect(view.getByText("Action targets are not allowlisted")).toBeTruthy(),
+    );
+    expect(
+      (view.getByRole("button", { name: "Execute" }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
   });
 });
 

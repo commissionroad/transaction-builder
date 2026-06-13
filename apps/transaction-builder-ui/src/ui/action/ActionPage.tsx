@@ -1,15 +1,31 @@
 import { useQuery } from "@tanstack/react-query";
 import { ActionNotFoundError, getPublishedAction } from "src/network/apiClient";
+import { AllowlistNotice } from "src/ui/allowlist/AllowlistNotice";
+import {
+  useAllowlistStatus,
+  type AllowlistStatus,
+} from "src/ui/allowlist/useAllowlistStatus";
 import { ActionVariableForm } from "./ActionVariableForm";
 import { GeneratedSummaryPanel } from "./GeneratedSummaryPanel";
 import { TechnicalDetailsPanel } from "./TechnicalDetailsPanel";
 
-export function ActionPage({ slug }: { slug: string }) {
+export function ActionPage({
+  allowlistStatusOverride,
+  slug,
+}: {
+  allowlistStatusOverride?: AllowlistStatus;
+  slug: string;
+}) {
   const actionQuery = useQuery({
     queryKey: ["published-action", slug],
     queryFn: () => getPublishedAction(slug),
     retry: false,
   });
+  const action = actionQuery.data?.definition;
+  const queriedAllowlistStatus = useAllowlistStatus(
+    allowlistStatusOverride ? undefined : action,
+  );
+  const allowlistStatus = allowlistStatusOverride ?? queriedAllowlistStatus;
 
   if (actionQuery.isLoading) {
     return (
@@ -38,11 +54,9 @@ export function ActionPage({ slug }: { slug: string }) {
     );
   }
 
-  if (!actionQuery.data) {
+  if (!action) {
     return null;
   }
-
-  const action = actionQuery.data.definition;
 
   return (
     <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_380px]">
@@ -61,12 +75,16 @@ export function ActionPage({ slug }: { slug: string }) {
           ) : null}
         </div>
 
+        <AllowlistNotice status={allowlistStatus} />
         <GeneratedSummaryPanel definition={action} />
         <TechnicalDetailsPanel definition={action} slug={slug} />
       </section>
 
       <aside className="flex flex-col gap-4">
-        <ActionVariableForm definition={action} />
+        <ActionVariableForm
+          allowlistStatus={allowlistStatus}
+          definition={action}
+        />
       </aside>
     </main>
   );

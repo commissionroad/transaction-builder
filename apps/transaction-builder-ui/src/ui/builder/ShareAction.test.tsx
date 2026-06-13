@@ -1,14 +1,14 @@
 import "src/testing/setup";
 
-import { cleanup, waitFor } from "@testing-library/react";
+import { cleanup, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, mock } from "bun:test";
 import {
   createLidoSweepAction,
   createPublishedActionResponse,
 } from "src/testing/fixtures";
-import { renderWithQueryClient } from "src/testing/render";
-import { BuilderView } from "./BuilderView";
+import { createInitialBuilderDraft } from "./builderState";
+import { ShareActionPanel } from "./ShareActionPanel";
 
 describe("ShareActionPanel", () => {
   afterEach(() => {
@@ -18,7 +18,13 @@ describe("ShareActionPanel", () => {
   });
 
   it("keeps Share Action disabled until the draft is valid", () => {
-    const view = renderWithQueryClient(<BuilderView />);
+    const view = render(
+      <ShareActionPanel
+        allowlistStatus={{ state: "not-selected", blockedTargets: [] }}
+        draft={createInitialBuilderDraft()}
+        hasActionSteps={false}
+      />,
+    );
 
     expect(
       (view.getByRole("button", { name: /Share Action/i }) as HTMLButtonElement)
@@ -35,8 +41,12 @@ describe("ShareActionPanel", () => {
       },
     ) as unknown as typeof fetch;
 
-    const view = renderWithQueryClient(
-      <BuilderView initialDraft={createLidoSweepAction()} />,
+    const view = render(
+      <ShareActionPanel
+        allowlistStatus={{ state: "allowlist-disabled", blockedTargets: [] }}
+        draft={createLidoSweepAction()}
+        hasActionSteps
+      />,
     );
 
     await userEvent.click(view.getByRole("button", { name: /Share Action/i }));
@@ -45,6 +55,27 @@ describe("ShareActionPanel", () => {
       expect(view.getByText(/\/t\/stake-lido-abc123/)).toBeTruthy(),
     );
     expect(requestBody).toEqual(createLidoSweepAction());
+  });
+
+  it("keeps Share Action disabled when the selected NFT allowlist blocks a target", () => {
+    const view = render(
+      <ShareActionPanel
+        allowlistStatus={{
+          state: "blocked",
+          blockedTargets: ["0x1111111111111111111111111111111111111111"],
+        }}
+        draft={createLidoSweepAction()}
+        hasActionSteps
+      />,
+    );
+
+    expect(
+      (view.getByRole("button", { name: /Share Action/i }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true);
+    expect(
+      view.getByText("Action targets must be allowlisted before sharing."),
+    ).toBeTruthy();
   });
 
   it("copies the generated share link", async () => {
@@ -57,8 +88,12 @@ describe("ShareActionPanel", () => {
       jsonResponse(createPublishedActionResponse()),
     ) as unknown as typeof fetch;
 
-    const view = renderWithQueryClient(
-      <BuilderView initialDraft={createLidoSweepAction()} />,
+    const view = render(
+      <ShareActionPanel
+        allowlistStatus={{ state: "allowlist-disabled", blockedTargets: [] }}
+        draft={createLidoSweepAction()}
+        hasActionSteps
+      />,
     );
 
     await userEvent.click(view.getByRole("button", { name: /Share Action/i }));

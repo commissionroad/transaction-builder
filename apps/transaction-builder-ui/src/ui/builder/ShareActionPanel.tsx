@@ -2,14 +2,21 @@ import { validateDraft } from "@transaction-builder/domain";
 import { Check, Copy, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { createPublishedAction } from "src/network/apiClient";
+import {
+  isAllowlistBlocking,
+  isAllowlistPending,
+  type AllowlistStatus,
+} from "src/ui/allowlist/useAllowlistStatus";
 import type { BuilderDraft } from "./builderState";
 
 interface ShareActionPanelProps {
+  allowlistStatus: AllowlistStatus;
   draft: BuilderDraft;
   hasActionSteps: boolean;
 }
 
 export function ShareActionPanel({
+  allowlistStatus,
   draft,
   hasActionSteps,
 }: ShareActionPanelProps) {
@@ -20,13 +27,25 @@ export function ShareActionPanel({
   const [slug, setSlug] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const validation = useMemo(() => validateDraft(draft), [draft]);
+  const nftIssue = !draft.commissionRoadNftId
+    ? "Select a CommissionRoad NFT before sharing."
+    : undefined;
+  const allowlistIssue = isAllowlistBlocking(allowlistStatus)
+    ? "Action targets must be allowlisted before sharing."
+    : isAllowlistPending(allowlistStatus)
+      ? "Wait for the selected NFT allowlist check to finish."
+      : undefined;
   const canShare =
-    validation.success && hasActionSteps && status !== "publishing";
+    validation.success &&
+    hasActionSteps &&
+    !nftIssue &&
+    !allowlistIssue &&
+    status !== "publishing";
   const sharePath = slug ? `/t/${slug}` : null;
   const shareUrl = sharePath ? getShareUrl(sharePath) : null;
 
   const handleShare = async () => {
-    if (!validation.success || !hasActionSteps) {
+    if (!validation.success || !canShare) {
       return;
     }
 
@@ -81,6 +100,12 @@ export function ShareActionPanel({
         {!validation.success ? (
           <div className="rounded-lg bg-base-200 p-3 text-xs text-base-content/70">
             {validation.issues[0]?.message}
+          </div>
+        ) : null}
+
+        {validation.success && (nftIssue || allowlistIssue) ? (
+          <div className="rounded-lg bg-base-200 p-3 text-xs text-base-content/70">
+            {nftIssue ?? allowlistIssue}
           </div>
         ) : null}
 

@@ -1,4 +1,5 @@
 import type { BuilderDraft } from "./builderState";
+import { CommissionRoadNftPicker } from "./CommissionRoadNftPicker";
 
 export function CommissionEditor({
   draft,
@@ -20,24 +21,7 @@ export function CommissionEditor({
     <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
       <div className="daisy-card-body gap-4">
         <h2 className="text-lg font-semibold">Commission</h2>
-        <label className="daisy-form-control">
-          <span className="daisy-label pb-2">
-            <span className="daisy-label-text font-medium">
-              CommissionRoad NFT
-            </span>
-          </span>
-          <input
-            className="daisy-input daisy-input-bordered w-full"
-            placeholder="NFT ID"
-            value={draft.commissionRoadNftId ?? ""}
-            onChange={(event) =>
-              onChange({
-                ...draft,
-                commissionRoadNftId: event.target.value || undefined,
-              })
-            }
-          />
-        </label>
+        <CommissionRoadNftPicker draft={draft} onChange={onChange} />
 
         <div>
           <div className="mb-2 text-sm font-medium">Commission token</div>

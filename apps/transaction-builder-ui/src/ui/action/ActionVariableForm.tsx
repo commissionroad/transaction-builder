@@ -9,6 +9,11 @@ import {
   prepareCommissionCall,
   type RawActionVariableValues,
 } from "src/transactions/commissionCall";
+import {
+  isAllowlistBlocking,
+  isAllowlistPending,
+  type AllowlistStatus,
+} from "src/ui/allowlist/useAllowlistStatus";
 import { formatUnits } from "viem";
 import {
   useAccount,
@@ -17,8 +22,10 @@ import {
 } from "wagmi";
 
 export function ActionVariableForm({
+  allowlistStatus,
   definition,
 }: {
+  allowlistStatus: AllowlistStatus;
   definition: ActionDefinitionV1;
 }) {
   const { isConnected } = useAccount();
@@ -42,8 +49,14 @@ export function ActionVariableForm({
     writeContract,
   } = useWriteContract();
   const receipt = useWaitForTransactionReceipt({ hash });
+  const isAllowlistBlocked = isAllowlistBlocking(allowlistStatus);
+  const isAllowlistLoading = isAllowlistPending(allowlistStatus);
 
   const handleExecute = () => {
+    if (isAllowlistBlocked || isAllowlistLoading) {
+      return;
+    }
+
     if (!isConnected) {
       openConnectModal?.();
       return;
@@ -104,7 +117,12 @@ export function ActionVariableForm({
 
         <button
           className="daisy-btn daisy-btn-primary w-full"
-          disabled={isPending || receipt.isLoading}
+          disabled={
+            isPending ||
+            receipt.isLoading ||
+            isAllowlistBlocked ||
+            isAllowlistLoading
+          }
           onClick={handleExecute}
           type="button"
         >
