@@ -22,6 +22,8 @@ import {
   updateParameterBinding,
 } from "./builderState";
 import { ContractAddressInput } from "../contracts/ContractAddressInput";
+import { Erc20TokenIdentity } from "../token/Erc20TokenIdentity";
+import { getFixedSweepErc20TokenAddress } from "../token/sweepToken";
 
 interface AvailableStepOutput {
   stepId: string;
@@ -181,6 +183,7 @@ function StepEditor({
     (candidate) => candidate.id === step.contractId,
   );
   const contractLabel = getContractDisplayName(contract, step.target);
+  const sweepTokenAddress = getFixedSweepErc20TokenAddress(step);
   const [copiedAddress, setCopiedAddress] = useState(false);
 
   const copyContractAddress = async () => {
@@ -251,32 +254,42 @@ function StepEditor({
 
       <div className="mt-4 grid gap-3">
         {step.inputs.map((input, parameterIndex) => (
-          <BindingEditor
-            binding={step.parameters[parameterIndex]}
-            createVariable={(label) =>
-              addVariable(
-                createActionVariable({
-                  existingVariables: draft.variables,
-                  preferredName:
-                    input.name || `step${index + 1}Param${parameterIndex + 1}`,
-                  type: input.type,
-                  label,
-                }),
-              )
-            }
-            key={`${step.id}-${parameterIndex}`}
-            label={input.name || `parameter ${parameterIndex + 1}`}
-            onChange={(binding) =>
-              onUpdate(
-                updateParameterBinding({ step, parameterIndex, binding }),
-              )
-            }
-            stepOutputs={getAvailableStepOutputs(draft, index, input.type)}
-            type={input.type}
-            variables={draft.variables.filter(
-              (variable) => variable.type === input.type,
-            )}
-          />
+          <div className="grid gap-2" key={`${step.id}-${parameterIndex}`}>
+            <BindingEditor
+              binding={step.parameters[parameterIndex]}
+              createVariable={(label) =>
+                addVariable(
+                  createActionVariable({
+                    existingVariables: draft.variables,
+                    preferredName:
+                      input.name ||
+                      `step${index + 1}Param${parameterIndex + 1}`,
+                    type: input.type,
+                    label,
+                  }),
+                )
+              }
+              label={input.name || `parameter ${parameterIndex + 1}`}
+              onChange={(binding) =>
+                onUpdate(
+                  updateParameterBinding({ step, parameterIndex, binding }),
+                )
+              }
+              stepOutputs={getAvailableStepOutputs(draft, index, input.type)}
+              type={input.type}
+              variables={draft.variables.filter(
+                (variable) => variable.type === input.type,
+              )}
+            />
+            {parameterIndex === 0 && sweepTokenAddress ? (
+              <Erc20TokenIdentity
+                address={sweepTokenAddress}
+                chainId={draft.chainId}
+                className="border-t border-base-300 px-3 pt-2"
+                label="Sweep token"
+              />
+            ) : null}
+          </div>
         ))}
 
         {step.callValue ? (

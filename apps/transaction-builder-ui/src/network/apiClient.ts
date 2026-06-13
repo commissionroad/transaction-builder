@@ -17,6 +17,9 @@ export interface CommissionRoadPortfolioNft {
   id: number;
   chainId: number;
   name: string;
+  image?: string;
+  imageUrl?: string;
+  image_data?: string;
   claimableBalances: Array<{
     address: string;
     symbol: string;

@@ -17,6 +17,8 @@ import {
   useAllowlistStatus,
   type AllowlistStatus,
 } from "src/ui/allowlist/useAllowlistStatus";
+import { Erc20TokenIdentity } from "src/ui/token/Erc20TokenIdentity";
+import { getFixedSweepErc20TokenAddress } from "src/ui/token/sweepToken";
 import { ActionStepsEditor } from "./ActionStepsEditor";
 import { ActionVariableEditor } from "./ActionVariableEditor";
 import { CommissionEditor } from "./CommissionEditor";
@@ -469,6 +471,14 @@ function PreviewCard({ draft }: { draft: BuilderDraft }) {
                   <div className="mt-0.5 truncate font-mono text-xs">
                     {step.signature}
                   </div>
+                  {step.sweepTokenAddress ? (
+                    <Erc20TokenIdentity
+                      address={step.sweepTokenAddress}
+                      chainId={draft.chainId}
+                      className="mt-2"
+                      label="Token"
+                    />
+                  ) : null}
                   <div className="mt-2 border-t border-base-300 pt-2">
                     <div className="truncate text-xs font-semibold">
                       {step.contractLabel}
@@ -536,6 +546,7 @@ interface ActionPreviewStep {
   signature: string;
   stepId: string;
   stepNumber: number;
+  sweepTokenAddress?: string;
 }
 
 function getDraftSummary(draft: BuilderDraft): DraftSummary {
@@ -581,6 +592,7 @@ function getActionPreviewSteps(draft: BuilderDraft): ActionPreviewStep[] {
       signature: step.functionSignature ?? step.functionName,
       stepId: step.id,
       stepNumber: index + 1,
+      sweepTokenAddress: getFixedSweepErc20TokenAddress(step),
     };
   });
 }

@@ -6,6 +6,8 @@ import { cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, mock } from "bun:test";
 import { useState, type Dispatch, type SetStateAction } from "react";
+import { WagmiProvider } from "wagmi";
+import { wagmiConfig } from "src/network/wagmi";
 import { renderWithQueryClient } from "src/testing/render";
 import { ActionStepsEditor } from "./ActionStepsEditor";
 
@@ -325,6 +327,9 @@ describe("ActionStepsEditor", () => {
   });
 
   it("adds the CommissionRoad ERC20 sweep helper as a first-class Action Step", async () => {
+    globalThis.fetch = mock(async () =>
+      jsonRpcResponse(),
+    ) as unknown as typeof fetch;
     let currentDraft = createStepOutputDraft();
     const view = renderWithQueryClient(
       <DraftHarness
@@ -379,7 +384,11 @@ function DraftHarness({
     });
   };
 
-  return <ActionStepsEditor draft={draft} onChange={handleChange} />;
+  return (
+    <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
+      <ActionStepsEditor draft={draft} onChange={handleChange} />
+    </WagmiProvider>
+  );
 }
 
 function createEmptyDraft(): ActionDefinitionV1 {
@@ -668,4 +677,17 @@ const TOKEN_ABI = [
 
 function escapeUserEventText(value: string): string {
   return value.replace(/[{[]/g, (character) => `${character}${character}`);
+}
+
+function jsonRpcResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      result: "0x",
+    }),
+    {
+      headers: { "content-type": "application/json" },
+    },
+  );
 }

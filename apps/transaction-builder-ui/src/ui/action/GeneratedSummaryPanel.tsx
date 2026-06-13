@@ -2,6 +2,8 @@ import {
   generateSummary,
   type ActionDefinitionV1,
 } from "@transaction-builder/domain";
+import { Erc20TokenIdentity } from "src/ui/token/Erc20TokenIdentity";
+import { getFixedSweepErc20TokenAddress } from "src/ui/token/sweepToken";
 
 export function GeneratedSummaryPanel({
   definition,
@@ -41,14 +43,28 @@ export function GeneratedSummaryPanel({
             Flow
           </h3>
           <ol className="mt-2 grid gap-2">
-            {summary.steps.map((step) => (
-              <li
-                className="rounded-lg bg-base-200 px-3 py-2 text-sm"
-                key={step}
-              >
-                {step}
-              </li>
-            ))}
+            {summary.steps.map((step, index) => {
+              const sweepTokenAddress = getFixedSweepErc20TokenAddress(
+                definition.steps[index],
+              );
+
+              return (
+                <li
+                  className="rounded-lg bg-base-200 px-3 py-2 text-sm"
+                  key={step}
+                >
+                  {step}
+                  {sweepTokenAddress ? (
+                    <Erc20TokenIdentity
+                      address={sweepTokenAddress}
+                      chainId={definition.chainId}
+                      className="mt-2 border-t border-base-300 pt-2"
+                      label="Recipient receives"
+                    />
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
         </div>
       </div>

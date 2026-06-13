@@ -23,8 +23,12 @@ describe("ActionPage", () => {
 
   it("loads a Published Action by slug and renders public inspection details", async () => {
     globalThis.fetch = mock(async (input: RequestInfo | URL) => {
-      expect(String(input)).toEndWith("/actions/stake-lido-abc123");
-      return jsonResponse(createPublishedActionResponse());
+      if (String(input).includes("/actions/")) {
+        expect(String(input)).toEndWith("/actions/stake-lido-abc123");
+        return jsonResponse(createPublishedActionResponse());
+      }
+
+      return jsonRpcResponse();
     }) as unknown as typeof fetch;
 
     const view = render(
@@ -62,8 +66,10 @@ describe("ActionPage", () => {
   });
 
   it("shows an allowlist warning and disables execution when action targets are blocked", async () => {
-    globalThis.fetch = mock(async () =>
-      jsonResponse(createPublishedActionResponse()),
+    globalThis.fetch = mock(async (input: RequestInfo | URL) =>
+      String(input).includes("/actions/")
+        ? jsonResponse(createPublishedActionResponse())
+        : jsonRpcResponse(),
     ) as unknown as typeof fetch;
 
     const view = render(
@@ -92,8 +98,12 @@ describe("ActionPage", () => {
   });
 
   it("shows the Permit2 funding checklist for ERC20 commission Actions", async () => {
-    globalThis.fetch = mock(async () =>
-      jsonResponse(createPublishedActionResponse(createUsdcCommissionAction())),
+    globalThis.fetch = mock(async (input: RequestInfo | URL) =>
+      String(input).includes("/actions/")
+        ? jsonResponse(
+            createPublishedActionResponse(createUsdcCommissionAction()),
+          )
+        : jsonRpcResponse(),
     ) as unknown as typeof fetch;
 
     const view = render(
@@ -127,4 +137,17 @@ function jsonResponse(body: unknown, status = 200): Response {
     status,
     headers: { "content-type": "application/json" },
   });
+}
+
+function jsonRpcResponse(): Response {
+  return new Response(
+    JSON.stringify({
+      id: 1,
+      jsonrpc: "2.0",
+      result: "0x",
+    }),
+    {
+      headers: { "content-type": "application/json" },
+    },
+  );
 }

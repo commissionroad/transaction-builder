@@ -7,27 +7,41 @@ describe("getOwnedCommissionRoadNftsForChain", () => {
       getOwnedCommissionRoadNftsForChain(
         [
           createPortfolioNft({ id: 1, chainId: 1, name: "Mainnet NFT" }),
-          createPortfolioNft({ id: 2, chainId: 8453, name: "Base NFT" }),
+          createPortfolioNft({
+            id: 2,
+            chainId: 8453,
+            imageUrl: "data:image/svg+xml;base64,abc",
+            name: "Base NFT",
+          }),
           createPortfolioNft({ id: 3, chainId: 11155111, name: "Sepolia NFT" }),
         ],
         8453,
       ),
-    ).toEqual([{ id: "2", name: "Base NFT" }]);
+    ).toEqual([
+      {
+        id: "2",
+        imageUrl: "data:image/svg+xml;base64,abc",
+        name: "Base NFT",
+      },
+    ]);
   });
 });
 
 function createPortfolioNft({
   id,
+  imageUrl,
   chainId,
   name,
 }: {
   id: number;
+  imageUrl?: string;
   chainId: number;
   name: string;
 }) {
   return {
     id,
     chainId,
+    ...(imageUrl ? { imageUrl } : {}),
     name,
     claimableBalances: [],
   };

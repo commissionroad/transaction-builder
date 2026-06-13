@@ -7,6 +7,7 @@ import {
 import { useAccount } from "wagmi";
 
 export interface OwnedCommissionRoadNft {
+  imageUrl?: string;
   id: string;
   name?: string;
 }
@@ -38,5 +39,13 @@ export function getOwnedCommissionRoadNftsForChain(
 ): OwnedCommissionRoadNft[] {
   return portfolioNfts
     .filter((nft) => nft.chainId === chainId)
-    .map((nft) => ({ id: nft.id.toString(), name: nft.name }));
+    .map((nft) => {
+      const imageUrl = nft.imageUrl ?? nft.image ?? nft.image_data;
+
+      return {
+        ...(imageUrl ? { imageUrl } : {}),
+        id: nft.id.toString(),
+        name: nft.name,
+      };
+    });
 }
