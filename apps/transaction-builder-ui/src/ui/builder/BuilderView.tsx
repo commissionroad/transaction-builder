@@ -74,6 +74,8 @@ export function BuilderView({
   const currentIndex = getStageIndex(stage);
   const nextStage = stages[currentIndex + 1]?.id;
   const previousStage = stages[currentIndex - 1]?.id;
+  const variableEditorMode =
+    currentIndex >= getStageIndex("commission") ? "accordion" : "expanded";
 
   return (
     <main className="mx-auto grid w-full max-w-6xl gap-5 px-4 py-6">
@@ -115,7 +117,11 @@ export function BuilderView({
                 info="Variables are values the person using your share link fills in before executing the Action."
                 title="Variables"
               />
-              <ActionVariableEditor draft={draft} onChange={setDraft} />
+              <ActionVariableEditor
+                draft={draft}
+                mode={variableEditorMode}
+                onChange={setDraft}
+              />
             </section>
           ) : null}
           <PreviewSection draft={draft} />

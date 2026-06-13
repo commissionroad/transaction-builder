@@ -96,13 +96,39 @@ describe("BuilderView", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
+
+  it("collapses Variables into a single-open accordion on the Commission stage", async () => {
+    const view = renderBuilder(
+      <BuilderView initialDraft={createDraftWithTwoVariables()} />,
+    );
+
+    expect(view.getByDisplayValue("Recipient")).toBeTruthy();
+    expect(view.getByDisplayValue("Amount")).toBeTruthy();
+
+    await userEvent.click(view.getByRole("button", { name: /Commission/i }));
+
+    expect(view.queryByDisplayValue("Recipient")).toBeNull();
+    expect(view.queryByDisplayValue("Amount")).toBeNull();
+
+    await userEvent.click(view.getByRole("button", { name: /Recipient/ }));
+
+    expect(view.getByDisplayValue("Recipient")).toBeTruthy();
+    expect(view.queryByDisplayValue("Amount")).toBeNull();
+
+    await userEvent.click(view.getByRole("button", { name: /Amount/ }));
+
+    expect(view.queryByDisplayValue("Recipient")).toBeNull();
+    expect(view.getByDisplayValue("Amount")).toBeTruthy();
+  });
 });
 
 function renderBuilder(ui: ReactElement): ReturnType<typeof render> {
   return render(
     <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
       <QueryClientProvider client={new QueryClient()}>
-        <RainbowKitProvider theme={commissionRoadTheme}>{ui}</RainbowKitProvider>
+        <RainbowKitProvider theme={commissionRoadTheme}>
+          {ui}
+        </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>,
   );
@@ -156,6 +182,23 @@ function createDraftWithVariable(): BuilderDraft {
     ],
     commissionToken: { kind: "eth" },
     commissionFormula: { kind: "flat", amount: "0" },
+  };
+}
+
+function createDraftWithTwoVariables(): BuilderDraft {
+  const draft = createDraftWithVariable();
+
+  return {
+    ...draft,
+    variables: [
+      ...draft.variables,
+      {
+        name: "amount",
+        label: "Amount",
+        type: "uint256",
+        description: "Amount to transfer.",
+      },
+    ],
   };
 }
 
