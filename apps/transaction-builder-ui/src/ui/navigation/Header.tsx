@@ -60,12 +60,18 @@ export function Header() {
                 <Link
                   to="/"
                   className={classNames(
-                    "inline-block w-20 text-center",
+                    "inline-flex w-24 items-center justify-center gap-1.5",
                     isBuildActive &&
                       "font-semibold underline underline-offset-6",
                   )}
                 >
                   Build
+                  <span
+                    aria-hidden="true"
+                    className="daisy-badge daisy-badge-secondary daisy-badge-sm border-0 px-1.5 text-[0.625rem] font-bold tracking-wide"
+                  >
+                    NEW
+                  </span>
                 </Link>
               </li>
               <li>
@@ -122,11 +128,17 @@ export function Header() {
               <Link
                 to="/"
                 className={classNames(
-                  "inline-block w-20 text-center",
+                  "inline-flex w-24 items-center justify-center gap-1.5",
                   isBuildActive && "font-semibold underline underline-offset-6",
                 )}
               >
                 Build
+                <span
+                  aria-hidden="true"
+                  className="daisy-badge daisy-badge-secondary daisy-badge-sm border-0 px-1.5 text-[0.625rem] font-bold tracking-wide"
+                >
+                  NEW
+                </span>
               </Link>
             </li>
             <li>
