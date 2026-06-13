@@ -1,0 +1,14 @@
+.DS_Store
+node_modules
+.turbo
+*.log
+dist
+dist-ssr
+*.local
+*.production
+.env
+.cache
+coverage
+
+# Local AI planning state - not shared
+.planning

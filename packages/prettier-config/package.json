@@ -1,0 +1,11 @@
+{
+  "name": "@transaction-builder/prettier-config",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "prettier": "^3.7.4",
+    "prettier-plugin-organize-imports": "^4.3.0"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "transaction-builder-api",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "echo \"transaction-builder-api scaffold has no build yet\"",
+    "dev": "echo \"transaction-builder-api scaffold has no dev server yet\"",
+    "lint": "echo \"transaction-builder-api scaffold has no lint yet\"",
+    "test": "echo \"transaction-builder-api scaffold has no tests yet\"",
+    "format": "prettier --write '**/*.{js,ts,json,md,yaml,yml}'"
+  },
+  "dependencies": {
+    "@elysiajs/cors": "^1.4.1",
+    "@elysiajs/openapi": "^1.4.14",
+    "drizzle-orm": "^0.45.1",
+    "elysia": "^1.4.22",
+    "postgres": "^3.4.7",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@transaction-builder/eslint-config": "workspace:*",
+    "@transaction-builder/prettier-config": "workspace:*",
+    "@transaction-builder/typescript-config": "workspace:*",
+    "drizzle-kit": "^0.31.8",
+    "prettier": "^3.7.4",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "typescript": "^5.9.3"
+  }
+}

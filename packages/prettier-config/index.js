@@ -1,0 +1,9 @@
+export default {
+  tabWidth: 2,
+  useTabs: false,
+  trailingComma: "all",
+  singleQuote: false,
+  semi: true,
+  printWidth: 80,
+  plugins: ["prettier-plugin-organize-imports"],
+};

@@ -1,0 +1,46 @@
+{
+  "name": "transaction-builder-ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "echo \"transaction-builder-ui scaffold has no build yet\"",
+    "dev": "echo \"transaction-builder-ui scaffold has no dev server yet\"",
+    "lint": "echo \"transaction-builder-ui scaffold has no lint yet\"",
+    "test": "echo \"transaction-builder-ui scaffold has no tests yet\"",
+    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,md,yaml,yml}'"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@rainbow-me/rainbowkit": "^2.2.10",
+    "@tanstack/react-query": "^5.90.12",
+    "@tanstack/react-router": "^1.159.6",
+    "@wagmi/connectors": "^7.1.6",
+    "classnames": "^2.5.1",
+    "daisyui": "^5.5.8",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "sonner": "^2.0.7",
+    "tailwindcss": "^4.1.17",
+    "viem": "^2.45.1",
+    "wagmi": "^3.4.2",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@transaction-builder/eslint-config": "workspace:*",
+    "@transaction-builder/prettier-config": "workspace:*",
+    "@transaction-builder/typescript-config": "workspace:*",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "happy-dom": "^20.6.1",
+    "prettier": "^3.7.4",
+    "prettier-plugin-organize-imports": "^4.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.6",
+    "vite-tsconfig-paths": "^5.1.4"
+  }
+}
