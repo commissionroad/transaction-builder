@@ -1,9 +1,14 @@
 import "src/testing/setup";
 
+import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, waitFor } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it, mock } from "bun:test";
+import { WagmiProvider } from "wagmi";
+import { wagmiConfig } from "src/network/wagmi";
 import { createPublishedActionResponse } from "src/testing/fixtures";
-import { renderWithQueryClient } from "src/testing/render";
+import { commissionRoadTheme } from "src/ui/rainbowKitTheme";
 import { ActionPage } from "./ActionPage";
 
 describe("ActionPage", () => {
@@ -19,7 +24,15 @@ describe("ActionPage", () => {
       return jsonResponse(createPublishedActionResponse());
     }) as unknown as typeof fetch;
 
-    const view = renderWithQueryClient(<ActionPage slug="stake-lido-abc123" />);
+    const view = render(
+      <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
+        <QueryClientProvider client={new QueryClient()}>
+          <RainbowKitProvider theme={commissionRoadTheme}>
+            <ActionPage slug="stake-lido-abc123" />
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>,
+    );
 
     await waitFor(() =>
       expect(

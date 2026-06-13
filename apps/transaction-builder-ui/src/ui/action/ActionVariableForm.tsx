@@ -2,12 +2,67 @@ import type {
   ActionDefinitionV1,
   ActionVariable,
 } from "@transaction-builder/domain";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
+import { AlertTriangle } from "lucide-react";
+import { useMemo, useState } from "react";
+import {
+  prepareCommissionCall,
+  type RawActionVariableValues,
+} from "src/transactions/commissionCall";
+import { formatUnits } from "viem";
+import {
+  useAccount,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 
 export function ActionVariableForm({
   definition,
 }: {
   definition: ActionDefinitionV1;
 }) {
+  const { isConnected } = useAccount();
+  const { openConnectModal } = useConnectModal();
+  const [rawValues, setRawValues] = useState<RawActionVariableValues>(() =>
+    Object.fromEntries(
+      definition.variables.map((variable) => [
+        variable.name,
+        variable.type === "bool" ? false : "",
+      ]),
+    ),
+  );
+  const prepared = useMemo(
+    () => prepareCommissionCall({ definition, rawValues }),
+    [definition, rawValues],
+  );
+  const {
+    data: hash,
+    error: writeError,
+    isPending,
+    writeContract,
+  } = useWriteContract();
+  const receipt = useWaitForTransactionReceipt({ hash });
+
+  const handleExecute = () => {
+    if (!isConnected) {
+      openConnectModal?.();
+      return;
+    }
+
+    if (!prepared.success) {
+      return;
+    }
+
+    writeContract({
+      address: prepared.prepared.address,
+      abi: prepared.prepared.abi,
+      functionName: prepared.prepared.functionName,
+      args: prepared.prepared.args,
+      value: prepared.prepared.value,
+      chainId: prepared.prepared.chainId,
+    });
+  };
+
   return (
     <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
       <div className="daisy-card-body gap-4">
@@ -21,7 +76,17 @@ export function ActionVariableForm({
         {definition.variables.length ? (
           <form className="grid gap-4">
             {definition.variables.map((variable) => (
-              <ActionVariableInput key={variable.name} variable={variable} />
+              <ActionVariableInput
+                key={variable.name}
+                onChange={(value) =>
+                  setRawValues((current) => ({
+                    ...current,
+                    [variable.name]: value,
+                  }))
+                }
+                value={rawValues[variable.name] ?? ""}
+                variable={variable}
+              />
             ))}
           </form>
         ) : (
@@ -30,7 +95,22 @@ export function ActionVariableForm({
           </div>
         )}
 
-        <button className="daisy-btn daisy-btn-primary w-full" type="button">
+        <ExecutionPreview
+          definition={definition}
+          preparation={prepared}
+          transactionHash={hash}
+          writeError={writeError}
+        />
+
+        <button
+          className="daisy-btn daisy-btn-primary w-full"
+          disabled={isPending || receipt.isLoading}
+          onClick={handleExecute}
+          type="button"
+        >
+          {isPending || receipt.isLoading ? (
+            <span className="daisy-loading daisy-loading-spinner daisy-loading-sm" />
+          ) : null}
           Execute
         </button>
       </div>
@@ -38,9 +118,38 @@ export function ActionVariableForm({
   );
 }
 
-function ActionVariableInput({ variable }: { variable: ActionVariable }) {
+function ActionVariableInput({
+  onChange,
+  value,
+  variable,
+}: {
+  onChange: (value: string | boolean) => void;
+  value: string | boolean;
+  variable: ActionVariable;
+}) {
   const inputType = getInputType(variable);
   const placeholder = getPlaceholder(variable);
+
+  if (variable.type === "bool") {
+    return (
+      <label className="flex items-center gap-3 rounded-lg border border-base-300 p-3">
+        <input
+          checked={value === true}
+          className="daisy-checkbox"
+          onChange={(event) => onChange(event.target.checked)}
+          type="checkbox"
+        />
+        <span>
+          <span className="block text-sm font-medium">{variable.label}</span>
+          {variable.description ? (
+            <span className="block text-xs text-base-content/60">
+              {variable.description}
+            </span>
+          ) : null}
+        </span>
+      </label>
+    );
+  }
 
   return (
     <label className="daisy-form-control">
@@ -51,8 +160,10 @@ function ActionVariableInput({ variable }: { variable: ActionVariable }) {
         aria-label={variable.label}
         className="daisy-input daisy-input-bordered w-full font-mono"
         inputMode={inputType === "number" ? "decimal" : undefined}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         type="text"
+        value={String(value)}
       />
       {variable.description ? (
         <span className="daisy-label pt-2">
@@ -77,6 +188,57 @@ function ActionVariableInput({ variable }: { variable: ActionVariable }) {
         </div>
       </details>
     </label>
+  );
+}
+
+function ExecutionPreview({
+  definition,
+  preparation,
+  transactionHash,
+  writeError,
+}: {
+  definition: ActionDefinitionV1;
+  preparation: ReturnType<typeof prepareCommissionCall>;
+  transactionHash: `0x${string}` | undefined;
+  writeError: Error | null;
+}) {
+  if (!preparation.success) {
+    return (
+      <div className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+        <span>{preparation.issues[0]?.message}</span>
+      </div>
+    );
+  }
+
+  const commissionSymbol =
+    definition.commissionToken.kind === "eth"
+      ? "ETH"
+      : (definition.commissionToken.symbol ?? "tokens");
+
+  return (
+    <div className="grid gap-3 rounded-lg bg-base-200 p-3 text-sm">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-base-content/70">App fee</span>
+        <span className="font-mono">
+          {formatUnits(preparation.prepared.commission, 18)} {commissionSymbol}
+        </span>
+      </div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-base-content/70">Total ETH sent</span>
+        <span className="font-mono">
+          {formatUnits(preparation.prepared.value, 18)} ETH
+        </span>
+      </div>
+      {transactionHash ? (
+        <div className="break-all text-xs text-base-content/70">
+          Transaction: <span className="font-mono">{transactionHash}</span>
+        </div>
+      ) : null}
+      {writeError ? (
+        <div className="text-xs text-error">{writeError.message}</div>
+      ) : null}
+    </div>
   );
 }
 
