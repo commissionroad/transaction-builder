@@ -263,7 +263,7 @@ function StageStepper({
 
 function PreviewCard({ draft }: { draft: BuilderDraft }) {
   const summary = getDraftSummary(draft);
-  const contractNodes = getContractCallTree(draft);
+  const previewSteps = getActionPreviewSteps(draft);
 
   return (
     <section className="rounded-lg border border-base-300 bg-base-100 p-4 shadow-sm">
@@ -288,44 +288,37 @@ function PreviewCard({ draft }: { draft: BuilderDraft }) {
         </div>
       </div>
 
-      {!contractNodes.length ? (
+      {!previewSteps.length ? (
         <div className="mt-3 rounded-lg border border-dashed border-base-300 bg-base-200 px-3 py-6 text-center text-sm text-base-content/60">
           Contract calls will appear here.
         </div>
       ) : (
         <div className="mt-4 grid gap-3">
-          {contractNodes.map((node) => (
-            <div key={node.contractId}>
-              <div className="flex items-start gap-2">
-                <span className="mt-1 size-2 shrink-0 rounded-full bg-secondary" />
-                <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold">
-                    {node.label}
+          {previewSteps.map((step) => (
+            <div className="flex items-start gap-2" key={step.stepId}>
+              <span className="mt-3 size-2 shrink-0 rounded-full bg-secondary" />
+              <div className="min-w-0 flex-1">
+                <div className="rounded-md bg-base-200 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
+                      Step {step.stepNumber}
+                    </span>
+                    <span className="text-[10px] font-semibold uppercase text-base-content/50">
+                      {formatStepKind(step.kind)}
+                    </span>
                   </div>
-                  <div className="truncate font-mono text-[11px] text-base-content/50">
-                    {formatShortAddress(node.address)}
+                  <div className="mt-0.5 truncate font-mono text-xs">
+                    {step.signature}
+                  </div>
+                  <div className="mt-2 border-t border-base-300 pt-2">
+                    <div className="truncate text-xs font-semibold">
+                      {step.contractLabel}
+                    </div>
+                    <div className="truncate font-mono text-[11px] text-base-content/50">
+                      {formatShortAddress(step.address)}
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="ml-1 mt-2 grid gap-1 border-l border-base-300 pl-4">
-                {node.calls.map((call) => (
-                  <div
-                    className="rounded-md bg-base-200 px-2 py-1.5"
-                    key={call.stepId}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-base-content/50">
-                        Step {call.stepNumber}
-                      </span>
-                      <span className="text-[10px] uppercase text-base-content/50">
-                        {call.kind}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 truncate font-mono text-xs">
-                      {call.signature}
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           ))}
@@ -377,16 +370,13 @@ interface DraftSummary {
   variables: string;
 }
 
-interface ContractCallTreeNode {
+interface ActionPreviewStep {
   address: string;
-  calls: Array<{
-    kind: string;
-    signature: string;
-    stepId: string;
-    stepNumber: number;
-  }>;
-  contractId: string;
-  label: string;
+  contractLabel: string;
+  kind: string;
+  signature: string;
+  stepId: string;
+  stepNumber: number;
 }
 
 function getDraftSummary(draft: BuilderDraft): DraftSummary {
@@ -410,37 +400,21 @@ function getDraftSummary(draft: BuilderDraft): DraftSummary {
   };
 }
 
-function getContractCallTree(draft: BuilderDraft): ContractCallTreeNode[] {
-  const nodes: ContractCallTreeNode[] = [];
-  const nodesByContractId = new Map<string, ContractCallTreeNode>();
-
-  draft.steps.forEach((step, index) => {
+function getActionPreviewSteps(draft: BuilderDraft): ActionPreviewStep[] {
+  return draft.steps.map((step, index) => {
     const contract = draft.contracts.find(
       (candidate) => candidate.id === step.contractId,
     );
-    const contractId = contract?.id ?? step.contractId;
-    let node = nodesByContractId.get(contractId);
 
-    if (!node) {
-      node = {
-        address: contract?.address ?? step.target,
-        calls: [],
-        contractId,
-        label: getContractDisplayName(draft, step.contractId),
-      };
-      nodesByContractId.set(contractId, node);
-      nodes.push(node);
-    }
-
-    node.calls.push({
+    return {
+      address: contract?.address ?? step.target,
+      contractLabel: getContractDisplayName(draft, step.contractId),
       kind: step.kind,
       signature: step.functionSignature ?? step.functionName,
       stepId: step.id,
       stepNumber: index + 1,
-    });
+    };
   });
-
-  return nodes;
 }
 
 function getContractDisplayName(
@@ -463,6 +437,12 @@ function formatShortAddress(address: string): string {
   return address.length > 14
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : address;
+}
+
+function formatStepKind(kind: string): string {
+  if (kind === "sweepErc20") return "Sweep ERC20";
+  if (kind === "sweepErc1155") return "Sweep ERC1155";
+  return kind;
 }
 
 function isStageComplete(stage: StageId, draft: BuilderDraft): boolean {

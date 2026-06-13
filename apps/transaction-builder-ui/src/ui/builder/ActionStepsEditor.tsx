@@ -31,8 +31,6 @@ interface AvailableStepOutput {
   type: string;
 }
 
-type SweepHelperKind = "erc20" | "erc1155";
-
 export function ActionStepsEditor({
   draft,
   onChange,
@@ -100,8 +98,8 @@ export function ActionStepsEditor({
     return variable;
   };
 
-  const addSweepStep = (kind: SweepHelperKind) => {
-    onChange((current) => addCommissionRoadSweepStep({ draft: current, kind }));
+  const addSweepStep = () => {
+    onChange(addCommissionRoadSweepStep);
   };
 
   return (
@@ -135,8 +133,7 @@ export function ActionStepsEditor({
       ) : (
         <StepCreationActions
           onAddContractCall={() => setIsAddingStep(true)}
-          onAddSweepErc1155={() => addSweepStep("erc1155")}
-          onAddSweepErc20={() => addSweepStep("erc20")}
+          onAddSweepErc20={addSweepStep}
         />
       )}
     </div>
@@ -145,15 +142,13 @@ export function ActionStepsEditor({
 
 function StepCreationActions({
   onAddContractCall,
-  onAddSweepErc1155,
   onAddSweepErc20,
 }: {
   onAddContractCall: () => void;
-  onAddSweepErc1155: () => void;
   onAddSweepErc20: () => void;
 }) {
   return (
-    <div className="grid gap-2 rounded-lg border border-dashed border-base-300 bg-base-100 p-3 sm:grid-cols-3">
+    <div className="grid gap-2 rounded-lg border border-dashed border-base-300 bg-base-100 p-3 sm:grid-cols-2">
       <button
         className="daisy-btn daisy-btn-outline justify-start"
         onClick={onAddContractCall}
@@ -169,14 +164,6 @@ function StepCreationActions({
       >
         <Plus className="size-4" />
         Sweep ERC20
-      </button>
-      <button
-        className="daisy-btn daisy-btn-outline justify-start"
-        onClick={onAddSweepErc1155}
-        type="button"
-      >
-        <Plus className="size-4" />
-        Sweep ERC1155
       </button>
     </div>
   );
@@ -306,13 +293,7 @@ function StepEditor({
   );
 }
 
-function addCommissionRoadSweepStep({
-  draft,
-  kind,
-}: {
-  draft: BuilderDraft;
-  kind: SweepHelperKind;
-}): BuilderDraft {
+function addCommissionRoadSweepStep(draft: BuilderDraft): BuilderDraft {
   const addresses = getCommissionRoadAddresses(draft.chainId);
   const existingContract = draft.contracts.find(
     (contract) =>
@@ -340,9 +321,7 @@ function addCommissionRoadSweepStep({
       label: "Recipient",
       description: "Wallet receiving the swept token balance.",
     });
-  const fragment = getCommissionRoadFunctionFragment(
-    kind === "erc20" ? "sweepERC20Token" : "sweepERC1155Token",
-  );
+  const fragment = getCommissionRoadFunctionFragment();
   const defaultToken = getDefaultSweepToken({
     commissionRoadAddress: addresses.commissionRoad,
     draft,
@@ -367,33 +346,24 @@ function addCommissionRoadSweepStep({
       ...draft.steps,
       {
         ...step,
-        kind: kind === "erc20" ? "sweepErc20" : "sweepErc1155",
-        label: kind === "erc20" ? "Sweep ERC20" : "Sweep ERC1155",
-        parameters:
-          kind === "erc20"
-            ? [
-                { kind: "fixed", value: defaultToken },
-                { kind: "actionVariable", name: recipientVariable.name },
-              ]
-            : [
-                { kind: "fixed", value: defaultToken },
-                { kind: "fixed", value: "0" },
-                { kind: "actionVariable", name: recipientVariable.name },
-              ],
+        kind: "sweepErc20",
+        label: "Sweep ERC20",
+        parameters: [
+          { kind: "fixed", value: defaultToken },
+          { kind: "actionVariable", name: recipientVariable.name },
+        ],
       },
     ],
   };
 }
 
-function getCommissionRoadFunctionFragment(
-  functionName: "sweepERC20Token" | "sweepERC1155Token",
-): AbiFunctionFragment {
+function getCommissionRoadFunctionFragment(): AbiFunctionFragment {
   const fragment = getAbiFunctions([...commissionRoadAbi]).find(
-    (candidate) => candidate.name === functionName,
+    (candidate) => candidate.name === "sweepERC20Token",
   );
 
   if (!fragment) {
-    throw new Error(`${functionName} is missing from the CommissionRoad ABI.`);
+    throw new Error("sweepERC20Token is missing from the CommissionRoad ABI.");
   }
 
   return fragment;

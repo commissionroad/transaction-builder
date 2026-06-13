@@ -221,7 +221,7 @@ describe("ActionStepsEditor", () => {
     ]);
   });
 
-  it("adds CommissionRoad sweep helpers as first-class Action Steps", async () => {
+  it("adds the CommissionRoad ERC20 sweep helper as a first-class Action Step", async () => {
     let currentDraft = createStepOutputDraft();
     const view = renderWithQueryClient(
       <DraftHarness
@@ -250,22 +250,7 @@ describe("ActionStepsEditor", () => {
         { kind: "actionVariable", name: "recipient" },
       ],
     });
-
-    await userEvent.click(view.getByRole("button", { name: /Sweep ERC1155/i }));
-
-    expect(
-      view.getByText("sweepERC1155Token(address,uint256,address)"),
-    ).toBeTruthy();
-    expect(currentDraft.steps.at(-1)).toMatchObject({
-      kind: "sweepErc1155",
-      target: commissionRoadAddress,
-      functionSignature: "sweepERC1155Token(address,uint256,address)",
-      parameters: [
-        { kind: "fixed", value: TOKEN_ADDRESS },
-        { kind: "fixed", value: "0" },
-        { kind: "actionVariable", name: "recipient" },
-      ],
-    });
+    expect(view.queryByRole("button", { name: /Sweep ERC1155/i })).toBeNull();
   });
 });
 
