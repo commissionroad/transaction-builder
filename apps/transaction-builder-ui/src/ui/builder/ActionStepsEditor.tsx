@@ -124,14 +124,18 @@ export function ActionStepsEditor({
           chainId={draft.chainId}
           existingContracts={draft.contracts}
           onCancel={() => setIsAddingStep(false)}
-          quickActions={[
-            {
-              description:
-                "Use CommissionRoad sweepERC20 without pasting its contract.",
-              label: "Sweep ERC20",
-              onSelect: addSweepStep,
-            },
-          ]}
+          quickActions={
+            draft.steps.length
+              ? [
+                  {
+                    description:
+                      "Use CommissionRoad sweepERC20 without pasting its contract.",
+                    label: "Sweep ERC20",
+                    onSelect: addSweepStep,
+                  },
+                ]
+              : undefined
+          }
           onStepSelected={addStep}
           stepNumber={draft.steps.length + 1}
           showCancel={draft.steps.length > 0}

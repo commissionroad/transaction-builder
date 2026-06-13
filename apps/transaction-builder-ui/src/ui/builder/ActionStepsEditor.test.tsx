@@ -29,7 +29,7 @@ describe("ActionStepsEditor", () => {
       />,
     );
 
-    expect(view.getByRole("button", { name: /Sweep ERC20/i })).toBeTruthy();
+    expect(view.queryByRole("button", { name: /Sweep ERC20/i })).toBeNull();
     expect(view.queryByText("Paste ABI manually")).toBeNull();
 
     await userEvent.type(
@@ -308,6 +308,7 @@ describe("ActionStepsEditor", () => {
     await userEvent.click(
       view.getByRole("button", { name: /Add Action Step/i }),
     );
+    expect(view.getByRole("button", { name: /Sweep ERC20/i })).toBeTruthy();
     await userEvent.click(view.getByRole("button", { name: /Sweep ERC20/i }));
 
     const commissionRoadAddress = getCommissionRoadAddresses(1).commissionRoad;
