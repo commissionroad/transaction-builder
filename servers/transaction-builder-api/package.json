@@ -11,6 +11,8 @@
     "format": "prettier --write '**/*.{js,ts,json,md,yaml,yml}'"
   },
   "dependencies": {
+    "@transaction-builder/database": "workspace:*",
+    "@transaction-builder/domain": "workspace:*",
     "@elysiajs/cors": "^1.4.1",
     "@elysiajs/openapi": "^1.4.14",
     "drizzle-orm": "^0.45.1",
