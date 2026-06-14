@@ -14,6 +14,7 @@ import {
 } from "src/testing/fixtures";
 import { commissionRoadTheme } from "src/ui/rainbowKitTheme";
 import { ActionPage } from "./ActionPage";
+import { isBalanceRelatedQueryKey } from "./ActionVariableForm";
 
 describe("ActionPage", () => {
   afterEach(() => {
@@ -171,6 +172,17 @@ describe("ActionPage", () => {
     expect(
       (view.getByRole("button", { name: "Execute" }) as HTMLButtonElement)
         .disabled,
+    ).toBe(true);
+  });
+
+  it("detects balance-related query keys without serializing BigInt values", () => {
+    expect(
+      isBalanceRelatedQueryKey([
+        {
+          entity: "readContract",
+          args: [1n],
+        },
+      ]),
     ).toBe(true);
   });
 });

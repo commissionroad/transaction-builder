@@ -913,11 +913,42 @@ function fireTransactionSuccessConfetti() {
   }, 140);
 }
 
-function isBalanceRelatedQueryKey(queryKey: readonly unknown[]): boolean {
-  const serializedQueryKey = JSON.stringify(queryKey).toLowerCase();
-  return (
-    serializedQueryKey.includes("balance") ||
-    serializedQueryKey.includes("readcontract")
+export function isBalanceRelatedQueryKey(queryKey: readonly unknown[]): boolean {
+  return queryKey.some((value) => hasBalanceRelatedQueryKeyMarker(value));
+}
+
+function hasBalanceRelatedQueryKeyMarker(
+  value: unknown,
+  visited = new WeakSet<object>(),
+): boolean {
+  if (typeof value === "string") {
+    const normalizedValue = value.toLowerCase();
+    return (
+      normalizedValue.includes("balance") ||
+      normalizedValue.includes("readcontract")
+    );
+  }
+
+  if (Array.isArray(value)) {
+    return value.some((item) =>
+      hasBalanceRelatedQueryKeyMarker(item, visited),
+    );
+  }
+
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (visited.has(value)) {
+    return false;
+  }
+
+  visited.add(value);
+
+  return Object.entries(value).some(
+    ([key, item]) =>
+      hasBalanceRelatedQueryKeyMarker(key, visited) ||
+      hasBalanceRelatedQueryKeyMarker(item, visited),
   );
 }
 
