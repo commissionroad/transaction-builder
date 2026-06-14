@@ -598,7 +598,11 @@ function isStageComplete(stage: StageId, draft: BuilderDraft): boolean {
     return Boolean(draft.commissionRoadNftId);
   }
 
-  return validateDraft(draft).success;
+  return Boolean(
+    draft.steps.length &&
+    draft.commissionRoadNftId &&
+    validateDraft(draft).success,
+  );
 }
 
 function getStageIndex(stage: StageId): number {

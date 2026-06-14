@@ -97,6 +97,26 @@ describe("BuilderView", () => {
     ).toBeTruthy();
   });
 
+  it("does not mark Review complete for a title-only draft", () => {
+    const view = renderBuilder(
+      <BuilderView
+        initialDraft={{
+          ...createDraftWithVariable(),
+          title: "Stake",
+          description: "",
+          commissionRoadNftId: undefined,
+          contracts: [],
+          variables: [],
+          steps: [],
+        }}
+      />,
+    );
+
+    const reviewStep = view.getByRole("button", { name: /Review/i });
+
+    expect(reviewStep.querySelector('[data-completed="true"]')).toBeNull();
+  });
+
   it("collapses Variables into a single-open accordion on the Flow stage", async () => {
     const view = renderBuilder(
       <BuilderView initialDraft={createDraftWithTwoVariables()} />,
