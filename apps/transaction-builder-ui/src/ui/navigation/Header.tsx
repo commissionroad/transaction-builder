@@ -60,12 +60,19 @@ export function Header() {
                 <Link
                   to="/"
                   className={classNames(
-                    "inline-block w-20 text-center",
-                    isBuildActive &&
-                      "font-semibold underline underline-offset-6",
+                    "inline-flex w-24 items-center justify-center gap-1.5",
+                    isBuildActive && "font-semibold",
                   )}
                 >
-                  Build
+                  <span className="inline-flex items-start gap-1">
+                    Build
+                    <span
+                      aria-hidden="true"
+                      className="-mt-0.5 rounded-full bg-secondary/15 px-1 py-px text-[0.5rem] font-black leading-none tracking-[0.08em] text-secondary ring-1 ring-secondary/30"
+                    >
+                      NEW
+                    </span>
+                  </span>
                 </Link>
               </li>
               <li>
@@ -122,11 +129,19 @@ export function Header() {
               <Link
                 to="/"
                 className={classNames(
-                  "inline-block w-20 text-center",
-                  isBuildActive && "font-semibold underline underline-offset-6",
+                  "inline-flex w-24 items-center justify-center gap-1.5",
+                  isBuildActive && "font-semibold",
                 )}
               >
-                Build
+                <span className="inline-flex items-start gap-1">
+                  Build
+                  <span
+                    aria-hidden="true"
+                    className="-mt-0.5 rounded-full bg-secondary/15 px-1 py-px text-[0.5rem] font-black leading-none tracking-[0.08em] text-secondary ring-1 ring-secondary/30"
+                  >
+                    NEW
+                  </span>
+                </span>
               </Link>
             </li>
             <li>
