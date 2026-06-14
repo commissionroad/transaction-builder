@@ -79,10 +79,6 @@ export function ShareActionPanel({
     <section className="daisy-card border border-base-300 bg-base-100 shadow-sm">
       <div className="daisy-card-body gap-4">
         <h2 className="text-lg font-semibold">Share</h2>
-        <p className="text-sm text-base-content/70">
-          Share Action creates an immutable Published Action and returns a short
-          `/t/` link.
-        </p>
         <button
           className="daisy-btn daisy-btn-primary w-full"
           disabled={!canShare}

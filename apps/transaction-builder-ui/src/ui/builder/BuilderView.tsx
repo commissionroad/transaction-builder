@@ -101,15 +101,16 @@ export function BuilderView({
             >
               Back
             </button>
-            <button
-              className="daisy-btn daisy-btn-secondary"
-              disabled={!nextStage}
-              onClick={() => nextStage && setStage(nextStage)}
-              type="button"
-            >
-              Continue
-              <ArrowRight className="size-4" />
-            </button>
+            {nextStage ? (
+              <button
+                className="daisy-btn daisy-btn-secondary"
+                onClick={() => setStage(nextStage)}
+                type="button"
+              >
+                Continue
+                <ArrowRight className="size-4" />
+              </button>
+            ) : null}
           </div>
         </div>
         <aside className="grid gap-5 self-start lg:sticky lg:top-24">
@@ -164,14 +165,13 @@ function StageWorkSurface({
 
   return (
     <div className="grid gap-5">
-      <ReviewSummary draft={draft} />
       <AllowlistNotice status={allowlistStatus} />
-      <SnippetPanel draft={draft} />
       <ShareActionPanel
         allowlistStatus={allowlistStatus}
         draft={draft}
         hasActionSteps={hasActionSteps}
       />
+      <SnippetPanel draft={draft} />
     </div>
   );
 }
@@ -497,46 +497,10 @@ function PreviewCard({ draft }: { draft: BuilderDraft }) {
   );
 }
 
-function ReviewSummary({ draft }: { draft: BuilderDraft }) {
-  const summary = getDraftSummary(draft);
-
-  return (
-    <section className="rounded-lg border border-base-300 bg-base-200 p-4">
-      <div className="text-xs font-semibold uppercase tracking-wide text-secondary">
-        Review
-      </div>
-      <h2 className="mt-1 text-xl font-semibold">
-        {draft.title || "Untitled Action"}
-      </h2>
-      <p className="mt-1 text-sm text-base-content/70">
-        {draft.description || "No description yet."}
-      </p>
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <ReviewPill label="Chain" value={summary.chain} />
-        <ReviewPill label="Steps" value={summary.steps} />
-        <ReviewPill label="Commission" value={summary.commission} />
-        <ReviewPill label="Variables" value={summary.variables} />
-      </div>
-    </section>
-  );
-}
-
-function ReviewPill({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-base-300 bg-base-100 p-3">
-      <div className="text-xs font-semibold uppercase tracking-wide text-base-content/50">
-        {label}
-      </div>
-      <div className="mt-1 text-sm">{value}</div>
-    </div>
-  );
-}
-
 interface DraftSummary {
   chain: string;
   commission: string;
   steps: string;
-  variables: string;
 }
 
 interface ActionPreviewStep {
@@ -560,10 +524,6 @@ function getDraftSummary(draft: BuilderDraft): DraftSummary {
     chain,
     commission,
     steps: draft.steps.length === 1 ? "1 Step" : `${draft.steps.length} Steps`,
-    variables:
-      draft.variables.length === 1
-        ? "1 Variable"
-        : `${draft.variables.length} Variables`,
   };
 }
 
