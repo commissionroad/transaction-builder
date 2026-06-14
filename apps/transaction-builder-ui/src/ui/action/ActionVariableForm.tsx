@@ -511,10 +511,15 @@ function ExecutionPreview({
   }, [address, preparation, publicClient]);
 
   if (!preview.success) {
+    const visibleIssue = getVisiblePreviewIssue(preview.issues, rawValues);
+    if (!visibleIssue) {
+      return null;
+    }
+
     return (
       <div className="flex gap-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-        <span>{preview.issues[0]?.message}</span>
+        <span>{visibleIssue.message}</span>
       </div>
     );
   }
@@ -818,6 +823,27 @@ function formatDisplayAmount(value: bigint, decimals: number): string {
   }
 
   return `${whole ?? "0"}.${trimmedFraction.slice(0, 6)}`;
+}
+
+function getVisiblePreviewIssue(
+  issues: Array<{ message: string; path: string }>,
+  rawValues: RawActionVariableValues,
+): { message: string; path: string } | undefined {
+  return issues.find((issue) => {
+    const variableName = issue.path.startsWith("variables.")
+      ? issue.path.slice("variables.".length)
+      : undefined;
+
+    if (
+      variableName &&
+      issue.message.endsWith(" is required.") &&
+      (rawValues[variableName] === undefined || rawValues[variableName] === "")
+    ) {
+      return false;
+    }
+
+    return true;
+  });
 }
 
 function formatPreviewAmount({
