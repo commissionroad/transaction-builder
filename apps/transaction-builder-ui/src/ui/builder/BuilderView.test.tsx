@@ -97,17 +97,12 @@ describe("BuilderView", () => {
     ).toBeTruthy();
   });
 
-  it("does not mark Review complete for a title-only draft", () => {
+  it("never marks Review complete from draft state", () => {
     const view = renderBuilder(
       <BuilderView
         initialDraft={{
           ...createDraftWithVariable(),
-          title: "Stake",
-          description: "",
-          commissionRoadNftId: undefined,
-          contracts: [],
-          variables: [],
-          steps: [],
+          commissionRoadNftId: "1",
         }}
       />,
     );
