@@ -80,6 +80,31 @@ export interface PreparedCommissionPlan {
   permit2Funding?: PreparedPermit2Funding;
 }
 
+export function getExecutableActionVariables(
+  definition: ActionDefinitionV1,
+): ActionVariable[] {
+  const ethCallValueVariableNames = new Set(
+    definition.steps.flatMap((step) =>
+      step.callValue?.kind === "actionVariable" ? [step.callValue.name] : [],
+    ),
+  );
+
+  return definition.variables.map((variable) => {
+    if (
+      variable.unit ||
+      !isIntegerAbiType(variable.type) ||
+      !ethCallValueVariableNames.has(variable.name)
+    ) {
+      return variable;
+    }
+
+    return {
+      ...variable,
+      unit: { kind: "eth", symbol: "ETH", decimals: 18 },
+    };
+  });
+}
+
 export type PreparedActionTransaction =
   | PreparedCommissionCall
   | PreparedCommissionPlan;
@@ -133,7 +158,7 @@ export function previewCommissionCall({
   }
 
   const parsedVariables = parseActionVariables({
-    variables: definition.variables,
+    variables: getExecutableActionVariables(definition),
     rawValues,
   });
   if (!parsedVariables.success) {
@@ -225,7 +250,7 @@ export function prepareCommissionCall({
   }
 
   const parsedVariables = parseActionVariables({
-    variables: definition.variables,
+    variables: getExecutableActionVariables(definition),
     rawValues,
   });
   if (!parsedVariables.success) {
@@ -590,7 +615,7 @@ function parseActionVariableValue(
       return { success: true, value: rawValue === "true" };
     }
 
-    if (variable.type.startsWith("uint") || variable.type.startsWith("int")) {
+    if (isIntegerAbiType(variable.type)) {
       if (variable.unit?.kind === "eth" || variable.unit?.kind === "erc20") {
         return {
           success: true,
@@ -611,6 +636,10 @@ function parseActionVariableValue(
       },
     };
   }
+}
+
+function isIntegerAbiType(type: string): boolean {
+  return type.startsWith("uint") || type.startsWith("int");
 }
 
 function createBatchCallData({

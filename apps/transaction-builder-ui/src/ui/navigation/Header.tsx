@@ -1,5 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import classNames from "classnames";
+import { getPublishedAction } from "src/network/apiClient";
 import { ConnectButton } from "../account/ConnectButton/ConnectButton";
 
 const COMMISSIONROAD_URL = "https://commissionroad.xyz";
@@ -9,6 +11,41 @@ export function Header() {
   const location = useLocation();
   const currentPath = location.pathname;
   const isBuildActive = currentPath === "/";
+  const isActionPage = currentPath.startsWith("/t/");
+  const actionSlug = isActionPage
+    ? currentPath.replace(/^\/t\//, "").split("/")[0]
+    : undefined;
+  const actionQuery = useQuery({
+    queryKey: ["published-action", actionSlug],
+    queryFn: () => getPublishedAction(actionSlug ?? ""),
+    enabled: Boolean(actionSlug),
+    retry: false,
+  });
+  const actionChainId = actionQuery.data?.definition.chainId;
+
+  if (isActionPage) {
+    return (
+      <header className="border-b border-base-300 bg-white">
+        <div className="mx-auto grid min-h-16 w-full max-w-7xl grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-4">
+          <div />
+          <a
+            className="inline-flex items-center gap-2 text-lg font-semibold text-neutral"
+            href={COMMISSIONROAD_URL}
+          >
+            <img
+              alt="CommissionRoad"
+              className="h-7"
+              src="/commissionRoadLogo.svg"
+            />
+            <span className="whitespace-nowrap">CommissionRoad</span>
+          </a>
+          <div className="justify-self-end">
+            <ConnectButton requiredChainId={actionChainId ?? null} />
+          </div>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="border-b border-base-300 bg-base-100">

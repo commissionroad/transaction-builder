@@ -1,13 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { ActionNotFoundError, getPublishedAction } from "src/network/apiClient";
-import { AllowlistNotice } from "src/ui/allowlist/AllowlistNotice";
 import {
   useAllowlistStatus,
   type AllowlistStatus,
 } from "src/ui/allowlist/useAllowlistStatus";
-import { ActionVariableForm } from "./ActionVariableForm";
-import { GeneratedSummaryPanel } from "./GeneratedSummaryPanel";
-import { TechnicalDetailsPanel } from "./TechnicalDetailsPanel";
+import { ActionPageLayout } from "./ActionPageLayout";
 
 export function ActionPage({
   allowlistStatusOverride,
@@ -59,33 +56,6 @@ export function ActionPage({
   }
 
   return (
-    <main className="mx-auto grid w-full max-w-7xl gap-6 px-4 py-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <section className="flex min-w-0 flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-medium uppercase tracking-wide text-secondary">
-            Published Action
-          </p>
-          <h1 className="text-3xl font-semibold text-neutral md:text-4xl">
-            {action.title}
-          </h1>
-          {action.description ? (
-            <p className="max-w-3xl text-base text-base-content/70">
-              {action.description}
-            </p>
-          ) : null}
-        </div>
-
-        <AllowlistNotice status={allowlistStatus} />
-        <GeneratedSummaryPanel definition={action} />
-        <TechnicalDetailsPanel definition={action} slug={slug} />
-      </section>
-
-      <aside className="flex flex-col gap-4">
-        <ActionVariableForm
-          allowlistStatus={allowlistStatus}
-          definition={action}
-        />
-      </aside>
-    </main>
+    <ActionPageLayout allowlistStatus={allowlistStatus} definition={action} />
   );
 }

@@ -34,6 +34,34 @@ describe("prepareCommissionCall", () => {
     expect(result.prepared.value).toBe(1_000_100_000_000_000_000n);
   });
 
+  it("treats payable call value variables without units as ETH amounts", () => {
+    const definition = createLidoSweepAction();
+    const result = prepareCommissionCall({
+      definition: {
+        ...definition,
+        variables: definition.variables.map((variable) =>
+          variable.name === "stakeAmount"
+            ? { ...variable, unit: undefined }
+            : variable,
+        ),
+      },
+      rawValues: {
+        stakeAmount: "1",
+        recipient: "0x1111111111111111111111111111111111111111",
+      },
+    });
+
+    expect(result.success).toBe(true);
+    if (!result.success) return;
+
+    expect(result.prepared.functionName).toBe("commissionCall");
+    if (result.prepared.functionName !== "commissionCall") return;
+    expect(result.prepared.batchCallData[0]?.value).toBe(
+      1_000_000_000_000_000_000n,
+    );
+    expect(result.prepared.value).toBe(1_000_100_000_000_000_000n);
+  });
+
   it("rejects missing Action Variable values before encoding calldata", () => {
     const result = prepareCommissionCall({
       definition: createLidoSweepAction(),

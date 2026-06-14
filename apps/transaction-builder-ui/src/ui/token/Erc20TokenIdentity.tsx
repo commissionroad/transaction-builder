@@ -1,3 +1,4 @@
+import { getExplorerConfig } from "@transaction-builder/commissionroad-protocol";
 import type {
   Address,
   SupportedActionChainId,
@@ -38,6 +39,7 @@ export function Erc20TokenIdentity({
       : !symbol
         ? "Ticker unavailable"
         : undefined;
+  const explorerUrl = `${getExplorerConfig(chainId).browserUrl}/address/${validAddress}`;
 
   return (
     <div
@@ -50,18 +52,26 @@ export function Erc20TokenIdentity({
       <span className="min-w-0 truncate font-semibold text-base-content">
         {tokenName}
       </span>
-      {symbol ? (
-        <span className="rounded-full border border-base-300 bg-base-100 px-2 py-0.5 font-mono text-[10px] font-semibold text-base-content/70">
-          {symbol}
-        </span>
-      ) : (
-        <span className="text-[10px] font-medium uppercase tracking-wide text-base-content/40">
-          {status}
-        </span>
-      )}
-      <span className="font-mono text-[10px] text-base-content/40">
-        {formatShortAddress(validAddress)}
-      </span>
+      <div className="flex min-w-0 items-center gap-2">
+        {symbol ? (
+          <span className="rounded-full border border-base-300 bg-base-100 px-2 py-0.5 text-[10px] font-semibold text-base-content/70">
+            {symbol}
+          </span>
+        ) : (
+          <span className="text-[10px] font-medium uppercase tracking-wide text-base-content/40">
+            {status}
+          </span>
+        )}
+        <a
+          className="text-[10px] text-base-content/55 underline decoration-base-content/20 underline-offset-2 transition hover:text-base-content hover:decoration-base-content/50"
+          href={explorerUrl}
+          rel="noreferrer"
+          target="_blank"
+          title={`Open ${validAddress} in ${getExplorerConfig(chainId).name}`}
+        >
+          {formatShortAddress(validAddress)}
+        </a>
+      </div>
     </div>
   );
 }
