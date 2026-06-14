@@ -6,10 +6,12 @@ import type { SupportedActionChainId } from "@transaction-builder/domain";
 export function CommissionRoadNftThumbnail({
   chainId,
   className,
+  framed = true,
   nft,
 }: {
   chainId: SupportedActionChainId;
   className?: string;
+  framed?: boolean;
   nft: OwnedCommissionRoadNft | undefined;
 }) {
   const metadata = useCommissionRoadNftMetadata({
@@ -22,7 +24,8 @@ export function CommissionRoadNftThumbnail({
   return (
     <span
       className={classNames(
-        "grid size-8 shrink-0 place-items-center overflow-hidden rounded-md border border-base-300 bg-base-200 text-[10px] font-semibold text-base-content/60",
+        "grid size-8 shrink-0 place-items-center overflow-hidden rounded-md text-[10px] font-semibold text-base-content/60",
+        framed && "border border-base-300 bg-base-200",
         className,
       )}
     >
