@@ -51,7 +51,7 @@ export function ActionPageLayout({
   }, [defaultRawValues]);
 
   return (
-    <main className="overflow-x-hidden bg-[linear-gradient(180deg,#fefefe_0%,#f4f7f5_44%,#edf5f1_100%)] pb-28">
+    <main className="overflow-x-hidden bg-base-200 pb-28">
       <div className="mx-auto w-full max-w-7xl px-4 py-8 md:py-10">
         <ActionHero
           align="center"
